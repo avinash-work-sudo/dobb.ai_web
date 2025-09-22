@@ -9,6 +9,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Breadcrumb,
+  BreadcrumbEllipsis,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import { 
   ArrowLeft, 
   BarChart3, 
@@ -20,7 +29,8 @@ import {
   Upload,
   ExternalLink,
   Download,
-  CheckCircle2
+  CheckCircle2,
+  Home
 } from "lucide-react";
 
 const Stories = () => {
@@ -214,6 +224,45 @@ const Stories = () => {
 
       <main className="container mx-auto px-6 py-8">
         <div className="max-w-7xl mx-auto">
+          {/* Breadcrumbs */}
+          <div className="mb-6">
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink 
+                    onClick={() => navigate('/homepage')}
+                    className="cursor-pointer flex items-center space-x-1"
+                  >
+                    <Home className="h-4 w-4" />
+                    <span>Home</span>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbLink 
+                    onClick={() => navigate('/features')}
+                    className="cursor-pointer"
+                  >
+                    Features
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbLink 
+                    onClick={() => navigate(`/feature/${id}`)}
+                    className="cursor-pointer"
+                  >
+                    User Authentication System
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Stories</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          </div>
+
           {/* Page Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-foreground mb-2">

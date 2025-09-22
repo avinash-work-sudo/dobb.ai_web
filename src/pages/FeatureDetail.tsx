@@ -7,6 +7,15 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Breadcrumb,
+  BreadcrumbEllipsis,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import { 
   ArrowLeft, 
   BarChart3, 
@@ -21,7 +30,8 @@ import {
   Globe,
   RefreshCw,
   FileEdit,
-  Users
+  Users,
+  Home
 } from "lucide-react";
 
 const FeatureDetail = () => {
@@ -226,6 +236,36 @@ This document outlines the requirements for implementing a comprehensive user au
 
       <main className="container mx-auto px-6 py-8">
         <div className="max-w-6xl mx-auto">
+          {/* Breadcrumbs */}
+          <div className="mb-6">
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink 
+                    onClick={() => navigate('/homepage')}
+                    className="cursor-pointer flex items-center space-x-1"
+                  >
+                    <Home className="h-4 w-4" />
+                    <span>Home</span>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbLink 
+                    onClick={() => navigate('/features')}
+                    className="cursor-pointer"
+                  >
+                    Features
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>{feature.title}</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          </div>
+
           {/* Feature Header */}
           <div className="mb-8">
             <div className="flex items-center space-x-3 mb-4">

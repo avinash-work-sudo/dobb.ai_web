@@ -7,6 +7,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Breadcrumb,
+  BreadcrumbEllipsis,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import { 
   ArrowLeft, 
   BarChart3, 
@@ -18,7 +27,8 @@ import {
   Clock,
   TestTube,
   Eye,
-  FileText
+  FileText,
+  Home
 } from "lucide-react";
 
 const StoryDetail = () => {
@@ -250,6 +260,54 @@ const StoryDetail = () => {
 
       <main className="container mx-auto px-6 py-8">
         <div className="max-w-7xl mx-auto">
+          {/* Breadcrumbs */}
+          <div className="mb-6">
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink 
+                    onClick={() => navigate('/homepage')}
+                    className="cursor-pointer flex items-center space-x-1"
+                  >
+                    <Home className="h-4 w-4" />
+                    <span>Home</span>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbLink 
+                    onClick={() => navigate('/features')}
+                    className="cursor-pointer"
+                  >
+                    Features
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbLink 
+                    onClick={() => navigate(`/feature/${id}`)}
+                    className="cursor-pointer"
+                  >
+                    User Authentication System
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbLink 
+                    onClick={() => navigate(`/feature/${id}/stories`)}
+                    className="cursor-pointer"
+                  >
+                    Stories
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>{story.title}</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          </div>
+
           {/* Story Header */}
           <div className="mb-8">
             <div className="flex items-center space-x-3 mb-4">
