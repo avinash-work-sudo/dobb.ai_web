@@ -35,7 +35,7 @@ const Landing = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
               <Button 
                 size="lg" 
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate('/onboarding')}
                 className="bg-gradient-primary text-white hover:opacity-90 transition-all duration-300 shadow-elegant"
               >
                 Try It Out
