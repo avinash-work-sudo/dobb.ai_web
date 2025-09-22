@@ -7,6 +7,7 @@ import Landing from "./pages/Landing";
 import Onboarding from "./pages/Onboarding";
 import Homepage from "./pages/Homepage";
 import Features from "./pages/Features";
+import FeatureDetail from "./pages/FeatureDetail";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 
@@ -23,6 +24,7 @@ const App = () => (
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/homepage" element={<Homepage />} />
           <Route path="/features" element={<Features />} />
+          <Route path="/feature/:id" element={<FeatureDetail />} />
           <Route path="/dashboard" element={<Dashboard />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
