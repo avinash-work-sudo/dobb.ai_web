@@ -438,7 +438,7 @@ This document outlines the requirements for implementing a comprehensive user au
               Refine PRD
             </Button>
             <Button 
-              onClick={() => navigate('/stories')}
+              onClick={() => navigate(`/feature/${id}/stories`)}
               variant="outline"
               className="border-primary text-primary hover:bg-primary hover:text-white transition-all duration-300"
               size="lg"

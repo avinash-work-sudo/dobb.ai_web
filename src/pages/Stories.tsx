@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 
 const Stories = () => {
+  const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [selectedStories, setSelectedStories] = useState<number[]>([]);
@@ -188,7 +189,7 @@ const Stories = () => {
               <Button 
                 variant="ghost" 
                 size="icon" 
-                onClick={() => navigate(-1)}
+                onClick={() => navigate(`/feature/${id}`)}
                 className="hover:bg-surface-subtle"
               >
                 <ArrowLeft className="h-5 w-5 text-muted-foreground" />
