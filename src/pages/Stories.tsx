@@ -348,7 +348,7 @@ const Stories = () => {
                           <Button 
                             variant="ghost" 
                             size="sm"
-                            onClick={() => navigate(`/story/${story.id}`)}
+                            onClick={() => navigate(`/feature/${id}/stories/${story.id}`)}
                             className="hover:bg-surface-subtle"
                           >
                             <Eye className="h-4 w-4" />
@@ -363,7 +363,7 @@ const Stories = () => {
                           <Button 
                             variant="ghost" 
                             size="sm"
-                            onClick={() => navigate(`/story/${story.id}/tests`)}
+                            onClick={() => navigate(`/feature/${id}/stories/${story.id}/tests`)}
                             className="hover:bg-surface-subtle"
                           >
                             <TestTube className="h-4 w-4" />
