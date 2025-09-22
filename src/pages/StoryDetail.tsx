@@ -334,6 +334,20 @@ const StoryDetail = () => {
             </Card>
           </div>
 
+          {/* Test Summary Button - Show if any tests have been executed */}
+          {(testCases.some(test => test.status === "passed" || test.status === "failed")) && (
+            <div className="mb-6 text-center">
+              <Button 
+                onClick={() => navigate(`/feature/${id}/stories/${storyId}/test-summary`)}
+                className="bg-gradient-primary text-white hover:opacity-90 transition-all duration-300"
+                size="lg"
+              >
+                <BarChart3 className="h-4 w-4 mr-2" />
+                View Test Summary
+              </Button>
+            </div>
+          )}
+
           {/* Actions Bar */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-2">

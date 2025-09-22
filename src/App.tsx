@@ -10,6 +10,7 @@ import Features from "./pages/Features";
 import FeatureDetail from "./pages/FeatureDetail";
 import Stories from "./pages/Stories";
 import StoryDetail from "./pages/StoryDetail";
+import TestSummary from "./pages/TestSummary";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 
@@ -29,6 +30,7 @@ const App = () => (
           <Route path="/feature/:id" element={<FeatureDetail />} />
           <Route path="/feature/:id/stories" element={<Stories />} />
           <Route path="/feature/:id/stories/:storyId" element={<StoryDetail />} />
+          <Route path="/feature/:id/stories/:storyId/test-summary" element={<TestSummary />} />
           <Route path="/dashboard" element={<Dashboard />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
