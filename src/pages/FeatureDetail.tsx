@@ -261,124 +261,165 @@ This document outlines the requirements for implementing a comprehensive user au
 
           {/* Impact Report */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            {/* Impacted Modules */}
+            {/* Impacted Modules - Product Perspective */}
             <Card className="bg-surface-elevated border border-border">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <Code className="h-5 w-5 text-blue-500" />
                   <span>Impacted Modules</span>
                 </CardTitle>
+                <CardDescription>Business and product areas affected by this feature</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">User Management</span>
+                    </div>
+                    <Badge variant="destructive" className="text-xs">High</Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Database className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">User Onboarding</span>
+                    </div>
+                    <Badge variant="destructive" className="text-xs">High</Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Globe className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">Account Settings</span>
+                    </div>
+                    <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs">Medium</Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">Analytics & Reporting</span>
+                    </div>
+                    <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">Low</Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Settings className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">Admin Dashboard</span>
+                    </div>
+                    <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs">Medium</Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Technical Impacts - Technical/Coding Perspective */}
+            <Card className="bg-surface-elevated border border-border">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Cpu className="h-5 w-5 text-yellow-500" />
+                  <span>Technical Impacts</span>
+                </CardTitle>
+                <CardDescription>Technical components and code modules affected</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <Database className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">User Database</span>
+                      <span className="text-sm">User Schema Tables</span>
                     </div>
-                    <Badge variant="destructive" className="text-xs">High</Badge>
+                    <Badge variant="destructive" className="text-xs">Critical</Badge>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                      <Cpu className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">Auth Service</span>
+                      <Code className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">Auth Service Layer</span>
                     </div>
                     <Badge variant="destructive" className="text-xs">High</Badge>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <Globe className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">API Gateway</span>
+                      <span className="text-sm">API Gateway Middleware</span>
+                    </div>
+                    <Badge variant="destructive" className="text-xs">High</Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Code className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">React Auth Components</span>
                     </div>
                     <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs">Medium</Badge>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                      <Globe className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">Frontend UI</span>
+                      <Database className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">Session Management</span>
                     </div>
                     <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs">Medium</Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Technical Impacts */}
-            <Card className="bg-surface-elevated border border-border">
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <AlertTriangle className="h-5 w-5 text-yellow-500" />
-                  <span>Technical Impacts</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium">Complexity Score</span>
-                      <span className="text-sm font-bold text-yellow-400">7.5/10</span>
-                    </div>
-                    <Progress value={75} className="h-2" />
-                  </div>
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium">Risk Level</span>
-                      <span className="text-sm font-bold text-red-400">6.2/10</span>
-                    </div>
-                    <Progress value={62} className="h-2" />
-                  </div>
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium">Dependencies</span>
-                      <span className="text-sm font-bold text-blue-400">4.1/10</span>
-                    </div>
-                    <Progress value={41} className="h-2" />
                   </div>
                   <div className="pt-2 border-t border-border">
-                    <p className="text-xs text-muted-foreground">
-                      Estimated development time: 120-150 hours
-                    </p>
+                    <div className="grid grid-cols-2 gap-4 text-xs text-muted-foreground">
+                      <span>Complexity: 8.5/10</span>
+                      <span>Effort: 120-150h</span>
+                    </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Identified Gaps */}
+            {/* Identified Gaps - Detailed by Category */}
             <Card className="bg-surface-elevated border border-border">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <AlertTriangle className="h-5 w-5 text-red-500" />
                   <span>Identified Gaps</span>
                 </CardTitle>
+                <CardDescription>Technical feasibility concerns and missing requirements</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-start space-x-2">
-                    <div className="w-2 h-2 rounded-full bg-red-500 mt-2 flex-shrink-0"></div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Security Audit</p>
-                      <p className="text-xs text-muted-foreground">Penetration testing required</p>
+                <div className="space-y-4">
+                  {/* Security Gaps */}
+                  <div>
+                    <h4 className="text-sm font-semibold text-red-400 mb-2">Security</h4>
+                    <div className="space-y-2 pl-3 border-l-2 border-red-500/30">
+                      <div className="text-xs">
+                        <p className="text-foreground font-medium">• Penetration Testing Protocol</p>
+                        <p className="text-muted-foreground">Comprehensive security audit including OWASP top 10 vulnerabilities, SQL injection, and XSS testing</p>
+                      </div>
+                      <div className="text-xs">
+                        <p className="text-foreground font-medium">• Multi-factor Authentication</p>
+                        <p className="text-muted-foreground">Integration with TOTP, SMS, and hardware security keys for enhanced account protection</p>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-start space-x-2">
-                    <div className="w-2 h-2 rounded-full bg-yellow-500 mt-2 flex-shrink-0"></div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Rate Limiting</p>
-                      <p className="text-xs text-muted-foreground">Anti-brute force measures</p>
+
+                  {/* Monitoring Gaps */}
+                  <div>
+                    <h4 className="text-sm font-semibold text-yellow-400 mb-2">Monitoring</h4>
+                    <div className="space-y-2 pl-3 border-l-2 border-yellow-500/30">
+                      <div className="text-xs">
+                        <p className="text-foreground font-medium">• Authentication Analytics</p>
+                        <p className="text-muted-foreground">Real-time monitoring of failed login attempts, suspicious patterns, and geographic anomalies</p>
+                      </div>
+                      <div className="text-xs">
+                        <p className="text-foreground font-medium">• Performance Metrics</p>
+                        <p className="text-muted-foreground">Response time tracking, database query optimization, and load balancing effectiveness</p>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-start space-x-2">
-                    <div className="w-2 h-2 rounded-full bg-blue-500 mt-2 flex-shrink-0"></div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Monitoring</p>
-                      <p className="text-xs text-muted-foreground">Auth failure analytics</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start space-x-2">
-                    <div className="w-2 h-2 rounded-full bg-green-500 mt-2 flex-shrink-0"></div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Documentation</p>
-                      <p className="text-xs text-muted-foreground">API docs and testing guide</p>
+
+                  {/* Documentation Gaps */}
+                  <div>
+                    <h4 className="text-sm font-semibold text-blue-400 mb-2">Documentation</h4>
+                    <div className="space-y-2 pl-3 border-l-2 border-blue-500/30">
+                      <div className="text-xs">
+                        <p className="text-foreground font-medium">• API Documentation</p>
+                        <p className="text-muted-foreground">Complete OpenAPI specs, rate limiting details, and error code references for developer integration</p>
+                      </div>
+                      <div className="text-xs">
+                        <p className="text-foreground font-medium">• Security Guidelines</p>
+                        <p className="text-muted-foreground">Password policies, session management best practices, and compliance requirements documentation</p>
+                      </div>
                     </div>
                   </div>
                 </div>
