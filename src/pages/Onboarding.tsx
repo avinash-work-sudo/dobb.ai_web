@@ -44,7 +44,7 @@ const Onboarding = () => {
     .every(account => connectedAccounts.includes(account.id));
 
   const handleContinue = () => {
-    navigate('/dashboard');
+    navigate('/homepage');
   };
 
   return (
