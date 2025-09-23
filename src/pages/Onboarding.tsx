@@ -1,13 +1,13 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
-import { Github, Figma, Settings, CheckCircle2, ArrowRight } from "lucide-react";
+import { Github, Figma, Settings, CheckCircle2, ArrowRight, Loader2 } from "lucide-react";
+import { useOAuth } from "@/hooks/useOAuth";
 
 const Onboarding = () => {
   const navigate = useNavigate();
-  const [connectedAccounts, setConnectedAccounts] = useState<string[]>([]);
+  const { connectedAccounts, isConnected, connectProvider, disconnectProvider, isLoading } = useOAuth();
 
   const accounts = [
     {
@@ -34,14 +34,16 @@ const Onboarding = () => {
   ];
 
   const handleConnect = (accountId: string) => {
-    if (!connectedAccounts.includes(accountId)) {
-      setConnectedAccounts([...connectedAccounts, accountId]);
+    if (isConnected(accountId)) {
+      disconnectProvider(accountId);
+    } else {
+      connectProvider(accountId);
     }
   };
 
   const canProceed = accounts
     .filter(account => account.required)
-    .every(account => connectedAccounts.includes(account.id));
+    .every(account => isConnected(account.id));
 
   const handleContinue = () => {
     navigate('/homepage');
@@ -74,15 +76,15 @@ const Onboarding = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
             {accounts.map((account) => {
-              const isConnected = connectedAccounts.includes(account.id);
+              const accountConnected = isConnected(account.id);
               
               return (
                 <Card key={account.id} className="relative bg-surface-elevated border border-border hover:shadow-elegant transition-all duration-300">
                   <CardHeader className="pb-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
-                        <div className={`p-2 rounded-lg ${isConnected ? 'bg-green-500/20' : 'bg-gradient-primary'}`}>
-                          {isConnected ? (
+                        <div className={`p-2 rounded-lg ${accountConnected ? 'bg-green-500/20' : 'bg-gradient-primary'}`}>
+                          {accountConnected ? (
                             <CheckCircle2 className="h-6 w-6 text-green-500" />
                           ) : (
                             <div className="text-white">{account.icon}</div>
@@ -109,14 +111,23 @@ const Onboarding = () => {
                     
                     <Button
                       onClick={() => handleConnect(account.id)}
-                      disabled={isConnected}
+                      disabled={isLoading}
                       className={`w-full ${
-                        isConnected 
+                        accountConnected 
                           ? 'bg-green-500 hover:bg-green-600 text-white' 
                           : 'bg-gradient-primary text-white hover:opacity-90'
                       } transition-all duration-300`}
                     >
-                      {isConnected ? 'Connected' : `Connect ${account.name}`}
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Connecting...
+                        </>
+                      ) : accountConnected ? (
+                        'Connected'
+                      ) : (
+                        `Connect ${account.name}`
+                      )}
                     </Button>
                   </CardContent>
                 </Card>
@@ -132,7 +143,7 @@ const Onboarding = () => {
                     <div
                       key={account.id}
                       className={`w-3 h-3 rounded-full ${
-                        connectedAccounts.includes(account.id)
+                        isConnected(account.id)
                           ? 'bg-green-500'
                           : 'bg-muted'
                       }`}
