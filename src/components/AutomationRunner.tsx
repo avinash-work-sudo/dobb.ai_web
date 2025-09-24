@@ -264,7 +264,7 @@ export function AutomationRunner() {
               <label className="text-sm font-medium mb-2 block">
                 Browser Framework:
               </label>
-              <Select value={framework} onValueChange={setFramework} disabled={isRunning}>
+              <Select value={framework} onValueChange={(value) => setFramework(value as 'playwright' | 'puppeteer')} disabled={isRunning}>
                 <SelectTrigger>
                   <SelectValue placeholder="Choose framework" />
                 </SelectTrigger>
@@ -376,15 +376,15 @@ export function AutomationRunner() {
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span className="flex items-center space-x-2">
-                {getStatusIcon(result.execution?.status || result.status)}
+                {getStatusIcon(result.executionId ? result.status : result.status)}
                 <span>Test Results</span>
               </span>
               <div className="flex items-center space-x-2">
                 <Badge variant="outline" className="text-xs">
                   {result.framework}
                 </Badge>
-                <Badge className={`text-xs border ${getStatusColor(result.execution?.status || result.status)}`}>
-                  {result.execution?.status || result.status}
+                <Badge className={`text-xs border ${getStatusColor(result.status)}`}>
+                  {result.status}
                 </Badge>
               </div>
             </CardTitle>
@@ -392,12 +392,12 @@ export function AutomationRunner() {
           <CardContent>
             <div className="space-y-4">
               {/* Execution Info */}
-              {result.execution && (
+              {result.executionId && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                   <div>
                     <span className="text-muted-foreground">Duration:</span>
                     <div className="font-medium">
-                      {result.execution.duration_ms ? `${Math.round(result.execution.duration_ms / 1000)}s` : 'N/A'}
+                      N/A
                     </div>
                   </div>
                   <div>
@@ -407,7 +407,7 @@ export function AutomationRunner() {
                   <div>
                     <span className="text-muted-foreground">Started:</span>
                     <div className="font-medium">
-                      {result.execution.started_at ? new Date(result.execution.started_at).toLocaleTimeString() : 'N/A'}
+                      N/A
                     </div>
                   </div>
                   <div>
@@ -456,10 +456,10 @@ export function AutomationRunner() {
               </div>
 
               {/* Error Message */}
-              {(result.error || result.execution?.error_message) && (
+              {result.error && (
                 <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
                   <p className="text-red-400 text-sm">
-                    <strong>Error:</strong> {result.error || result.execution?.error_message}
+                    <strong>Error:</strong> {result.error}
                   </p>
                 </div>
               )}

@@ -497,7 +497,7 @@ const TestCaseRunner = () => {
                     <label className="text-sm font-medium mb-2 block">
                       Browser Framework:
                     </label>
-                    <Select value={framework} onValueChange={setFramework} disabled={isRunning}>
+                    <Select value={framework} onValueChange={(value) => setFramework(value as 'playwright' | 'puppeteer')} disabled={isRunning}>
                       <SelectTrigger>
                         <SelectValue placeholder="Choose framework" />
                       </SelectTrigger>
