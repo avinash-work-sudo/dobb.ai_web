@@ -167,7 +167,9 @@ const Homepage = () => {
                     acceptsFile={true}
                     fileTypes={["pdf", "docx", "md"]}
                     placeholder="Upload PRD document..."
+                    value={fileUrl}
                     onFileUpload={(url) => setFileUrl(url)}
+                    onValueChange={(value) => setFileUrl(value)}
                   />
                 </TabsContent>
 
@@ -179,7 +181,9 @@ const Homepage = () => {
                       icon={<FileText className="h-6 w-6" />}
                       acceptsUrl={true}
                       placeholder="https://confluence.example.com/prd..."
+                      value={prdLink}
                       onUrlSubmit={(url) => setPrdLink(url)}
+                      onValueChange={(value) => setPrdLink(value)}
                     />
                     
                     <UploadCard
@@ -188,7 +192,9 @@ const Homepage = () => {
                       icon={<Figma className="h-6 w-6" />}
                       acceptsUrl={true}
                       placeholder="https://figma.com/file/..."
+                      value={figmaLink}
                       onUrlSubmit={(url) => setFigmaLink(url)}
+                      onValueChange={(value) => setFigmaLink(value)}
                     />
                     
                     <UploadCard
@@ -197,7 +203,9 @@ const Homepage = () => {
                       icon={<Mic className="h-6 w-6" />}
                       acceptsUrl={true}
                       placeholder="https://meet.google.com/transcript/..."
+                      value={transcriptLink}
                       onUrlSubmit={(url) => setTranscriptLink(url)}
+                      onValueChange={(value) => setTranscriptLink(value)}
                     />
                   </div>
                 </TabsContent>

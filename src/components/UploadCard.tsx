@@ -16,6 +16,8 @@ interface UploadCardProps {
   placeholder?: string;
   onFileUpload?: (url: string) => void;
   onUrlSubmit?: (url: string) => void;
+  value?: string; // For preserving state
+  onValueChange?: (value: string) => void; // For preserving state
 }
 
 export const UploadCard = ({ 
@@ -27,12 +29,14 @@ export const UploadCard = ({
   fileTypes = [],
   placeholder = "Enter URL or upload file...",
   onFileUpload,
-  onUrlSubmit
+  onUrlSubmit,
+  value = "",
+  onValueChange
 }: UploadCardProps) => {
   const [isDragOver, setIsDragOver] = useState(false);
-  const [isUploaded, setIsUploaded] = useState(false);
+  const [isUploaded, setIsUploaded] = useState(!!value);
   const [isUploading, setIsUploading] = useState(false);
-  const [urlInput, setUrlInput] = useState("");
+  const [urlInput, setUrlInput] = useState(value);
   const { toast } = useToast();
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -76,6 +80,7 @@ export const UploadCard = ({
 
       setIsUploaded(true);
       onFileUpload?.(urlData.publicUrl);
+      onValueChange?.(urlData.publicUrl);
       
       toast({
         title: "File uploaded",
@@ -97,11 +102,11 @@ export const UploadCard = ({
     if (urlInput.trim()) {
       setIsUploaded(true);
       onUrlSubmit?.(urlInput.trim());
+      onValueChange?.(urlInput.trim());
       toast({
         title: "URL added",
         description: `${title} URL has been added successfully.`,
       });
-      setUrlInput("");
     }
   };
 
@@ -109,20 +114,20 @@ export const UploadCard = ({
     <Card 
       className={`p-6 transition-all duration-300 hover:shadow-elegant ${
         isDragOver ? 'border-primary bg-surface-subtle' : 'hover:border-primary/50'
-      } ${isUploaded ? 'border-green-500 bg-green-50' : ''}`}
+      } ${isUploaded ? 'border-gray-800 bg-gray-900' : ''}`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
       <div className="flex items-start space-x-4">
-        <div className={`p-3 rounded-lg ${isUploaded ? 'bg-green-100 text-green-600' : 'bg-surface-subtle text-primary'}`}>
+        <div className={`p-3 rounded-lg ${isUploaded ? 'bg-gray-800 text-white' : 'bg-surface-subtle text-primary'}`}>
           {isUploaded ? <CheckCircle className="h-6 w-6" /> : icon}
         </div>
         
         <div className="flex-1 space-y-4">
           <div>
-            <h3 className="font-semibold text-foreground">{title}</h3>
-            <p className="text-sm text-muted-foreground">{description}</p>
+            <h3 className={`font-semibold ${isUploaded ? 'text-white' : 'text-foreground'}`}>{title}</h3>
+            <p className={`text-sm ${isUploaded ? 'text-gray-300' : 'text-muted-foreground'}`}>{description}</p>
           </div>
 
           {!isUploaded && (
@@ -132,7 +137,10 @@ export const UploadCard = ({
                   <Input
                     placeholder={placeholder}
                     value={urlInput}
-                    onChange={(e) => setUrlInput(e.target.value)}
+                    onChange={(e) => {
+                      setUrlInput(e.target.value);
+                      onValueChange?.(e.target.value);
+                    }}
                     className="flex-1"
                   />
                   <Button onClick={handleUrlSubmit} size="sm">
@@ -182,7 +190,7 @@ export const UploadCard = ({
           )}
 
           {isUploaded && (
-            <div className="flex items-center text-green-600">
+            <div className="flex items-center text-white">
               <CheckCircle className="h-4 w-4 mr-2" />
               <span className="text-sm font-medium">Successfully uploaded</span>
             </div>
