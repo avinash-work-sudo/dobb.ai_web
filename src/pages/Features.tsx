@@ -67,16 +67,31 @@ const Features = () => {
           else if (feature.file_url) sourceType = "Document";
 
           // Extract information from the actual impact_json structure
-          const summary = impactData.summary || impactData.impactScore || {};
-          const estimatedEffortString = summary.estimatedEffort || "0 weeks";
+          // Handle both summary as string and impactScore as object
+          let summary, impactScore, estimatedEffort, riskLevel;
+          
+          if (typeof impactData.summary === 'string') {
+            // When summary is a string, impactScore is an object
+            summary = impactData.summary;
+            const impactScoreObj = impactData.impactScore || {};
+            impactScore = impactScoreObj.totalImpactScore || 0;
+            estimatedEffort = impactScoreObj.estimatedEffort || "0 weeks";
+            riskLevel = impactScoreObj.riskLevel || "Medium";
+          } else {
+            // When summary is an object (old format)
+            const summaryObj = impactData.summary || impactData.impactScore || {};
+            summary = "Impact analysis completed";
+            impactScore = summaryObj.totalImpactScore || 0;
+            estimatedEffort = summaryObj.estimatedEffort || "0 weeks";
+            riskLevel = summaryObj.riskLevel || "Medium";
+          }
           
           // Convert estimated effort to hours (rough estimation: 1 week = 40 hours)
-          const estimatedHours = estimatedEffortString.includes("week") 
-            ? parseInt(estimatedEffortString) * 40 
+          const estimatedHours = estimatedEffort.includes("week") 
+            ? parseInt(estimatedEffort) * 40 
             : 0;
 
           // Derive priority from risk level
-          const riskLevel = summary.riskLevel || "Medium";
           const priority = riskLevel === "High" ? "high" : riskLevel === "Low" ? "low" : "medium";
 
           // Calculate team size based on impacted modules (rough estimation)
@@ -86,11 +101,11 @@ const Features = () => {
           return {
             id: feature.id,
             title: impactData.title || `Feature Analysis ${feature.id.slice(0, 8)}`,
-            description: impactData.summary || "Impact analysis completed",
+            description: summary, // Now always a string
             status: feature.status || "pending",
             priority: priority.toLowerCase(),
             lastAnalyzed: new Date(feature.updated_at).toISOString().split('T')[0],
-            impactScore: Math.round((summary.totalImpactScore || 0) * 10), // Convert to 0-100 scale
+            impactScore: Math.round(impactScore * 10), // Convert to 0-100 scale
             sourceType,
             teamSize,
             estimatedHours,
