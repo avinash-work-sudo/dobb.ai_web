@@ -66,17 +66,34 @@ const Features = () => {
           else if (feature.transcript_link) sourceType = "Meeting Transcript";
           else if (feature.file_url) sourceType = "Document";
 
+          // Extract information from the actual impact_json structure
+          const summary = impactData.summary || impactData.impactScore || {};
+          const estimatedEffortString = summary.estimatedEffort || "0 weeks";
+          
+          // Convert estimated effort to hours (rough estimation: 1 week = 40 hours)
+          const estimatedHours = estimatedEffortString.includes("week") 
+            ? parseInt(estimatedEffortString) * 40 
+            : 0;
+
+          // Derive priority from risk level
+          const riskLevel = summary.riskLevel || "Medium";
+          const priority = riskLevel === "High" ? "high" : riskLevel === "Low" ? "low" : "medium";
+
+          // Calculate team size based on impacted modules (rough estimation)
+          const impactedModules = impactData.impactedModules || [];
+          const teamSize = Math.max(1, Math.min(5, impactedModules.length));
+
           return {
             id: feature.id,
-            title: impactData.title || "Untitled Feature",
-            description: impactData.description || "No description available",
+            title: impactData.title || `Feature Analysis ${feature.id.slice(0, 8)}`,
+            description: impactData.summary || "Impact analysis completed",
             status: feature.status || "pending",
-            priority: impactData.priority || "medium",
+            priority: priority.toLowerCase(),
             lastAnalyzed: new Date(feature.updated_at).toISOString().split('T')[0],
-            impactScore: impactData.impact_score || 0,
+            impactScore: Math.round((summary.totalImpactScore || 0) * 10), // Convert to 0-100 scale
             sourceType,
-            teamSize: impactData.team_size || 0,
-            estimatedHours: impactData.estimated_hours || 0,
+            teamSize,
+            estimatedHours,
           };
         }) || [];
 
