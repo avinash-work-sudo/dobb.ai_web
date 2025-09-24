@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,8 +42,11 @@ const Stories = () => {
   const { toast } = useToast();
   const [selectedStories, setSelectedStories] = useState<number[]>([]);
   const [showJiraModal, setShowJiraModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingStory, setEditingStory] = useState<any>(null);
   const [jiraWebhookUrl, setJiraWebhookUrl] = useState("");
   const [isImporting, setIsImporting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [userStories, setUserStories] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [featureTitle, setFeatureTitle] = useState("Feature");
@@ -140,7 +144,96 @@ const Stories = () => {
     }
   };
 
-  const handleJiraImport = async () => {
+  const handleEditStory = (story: any) => {
+    setEditingStory({
+      ...story,
+      // Convert arrays back to strings for editing
+      acceptance_criteria: story.acceptanceCriteria || [],
+      test_cases: story.testCases || []
+    });
+    setShowEditModal(true);
+  };
+
+  const handleSaveStory = async () => {
+    if (!editingStory) return;
+    
+    setIsSaving(true);
+    try {
+      // Find the original story to get the database ID
+      const originalStory = userStories.find(s => s.id === editingStory.id);
+      if (!originalStory?.dbId) {
+        toast({
+          title: "Error",
+          description: "Could not find story ID to update",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Update story in database
+      const { error } = await supabase
+        .from('user_stories')
+        .update({
+          title: editingStory.title,
+          description: editingStory.description,
+          priority: editingStory.priority?.toLowerCase(),
+          estimated_hours: parseInt(editingStory.estimatedHours) || 0,
+          acceptance_criteria: editingStory.acceptance_criteria,
+          test_cases: editingStory.test_cases,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', originalStory.dbId);
+
+      if (error) {
+        console.error('Error updating story:', error);
+        toast({
+          title: "Update Failed",
+          description: "Failed to update the user story",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Update local state
+      const updatedStories = userStories.map(story => 
+        story.id === editingStory.id 
+          ? {
+              ...story,
+              title: editingStory.title,
+              description: editingStory.description,
+              priority: editingStory.priority,
+              estimatedHours: parseInt(editingStory.estimatedHours) || 0,
+              acceptanceCriteria: editingStory.acceptance_criteria?.length || 0,
+              testCases: editingStory.test_cases?.length || 0
+            }
+          : story
+      );
+      setUserStories(updatedStories);
+
+      toast({
+        title: "Story Updated",
+        description: "User story has been successfully updated",
+      });
+
+      setShowEditModal(false);
+      setEditingStory(null);
+
+    } catch (error) {
+      console.error('Error saving story:', error);
+      toast({
+        title: "Save Failed",
+        description: "An error occurred while saving the story",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setShowEditModal(false);
+    setEditingStory(null);
+  };
     if (!jiraWebhookUrl) {
       toast({
         title: "Error",
@@ -475,6 +568,7 @@ const Stories = () => {
                           <Button 
                             variant="ghost" 
                             size="sm"
+                            onClick={() => handleEditStory(story)}
                             className="hover:bg-surface-subtle"
                           >
                             <Edit className="h-4 w-4" />
@@ -560,6 +654,173 @@ const Stories = () => {
                   <Upload className="h-4 w-4 mr-2" />
                   Import to JIRA
                 </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Story Modal */}
+      <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+        <DialogContent className="max-w-2xl bg-surface-elevated border border-border">
+          <DialogHeader>
+            <DialogTitle>Edit User Story</DialogTitle>
+            <DialogDescription>
+              Update the details of this user story.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {editingStory && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="story-title">Title</Label>
+                <Input
+                  id="story-title"
+                  value={editingStory.title || ""}
+                  onChange={(e) => setEditingStory({...editingStory, title: e.target.value})}
+                  className="bg-surface-subtle border-border"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="story-description">Description</Label>
+                <Textarea
+                  id="story-description"
+                  value={editingStory.description || ""}
+                  onChange={(e) => setEditingStory({...editingStory, description: e.target.value})}
+                  className="bg-surface-subtle border-border min-h-[100px]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="story-priority">Priority</Label>
+                  <select
+                    id="story-priority"
+                    value={editingStory.priority || "Medium"}
+                    onChange={(e) => setEditingStory({...editingStory, priority: e.target.value})}
+                    className="w-full px-3 py-2 text-sm rounded-md border border-border bg-surface-subtle text-foreground"
+                  >
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+                  </select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="story-hours">Estimated Hours</Label>
+                  <Input
+                    id="story-hours"
+                    type="number"
+                    value={editingStory.estimatedHours || 0}
+                    onChange={(e) => setEditingStory({...editingStory, estimatedHours: e.target.value})}
+                    className="bg-surface-subtle border-border"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Acceptance Criteria</Label>
+                <div className="space-y-2">
+                  {editingStory.acceptance_criteria?.map((criteria: string, index: number) => (
+                    <div key={index} className="flex gap-2">
+                      <Input
+                        value={criteria}
+                        onChange={(e) => {
+                          const newCriteria = [...editingStory.acceptance_criteria];
+                          newCriteria[index] = e.target.value;
+                          setEditingStory({...editingStory, acceptance_criteria: newCriteria});
+                        }}
+                        className="bg-surface-subtle border-border"
+                        placeholder="Acceptance criteria"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const newCriteria = editingStory.acceptance_criteria.filter((_: any, i: number) => i !== index);
+                          setEditingStory({...editingStory, acceptance_criteria: newCriteria});
+                        }}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setEditingStory({
+                        ...editingStory,
+                        acceptance_criteria: [...(editingStory.acceptance_criteria || []), ""]
+                      });
+                    }}
+                  >
+                    Add Criteria
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Test Cases</Label>
+                <div className="space-y-2">
+                  {editingStory.test_cases?.map((testCase: string, index: number) => (
+                    <div key={index} className="flex gap-2">
+                      <Input
+                        value={testCase}
+                        onChange={(e) => {
+                          const newTestCases = [...editingStory.test_cases];
+                          newTestCases[index] = e.target.value;
+                          setEditingStory({...editingStory, test_cases: newTestCases});
+                        }}
+                        className="bg-surface-subtle border-border"
+                        placeholder="Test case"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const newTestCases = editingStory.test_cases.filter((_: any, i: number) => i !== index);
+                          setEditingStory({...editingStory, test_cases: newTestCases});
+                        }}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setEditingStory({
+                        ...editingStory,
+                        test_cases: [...(editingStory.test_cases || []), ""]
+                      });
+                    }}
+                  >
+                    Add Test Case
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={handleCancelEdit}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSaveStory}
+              disabled={isSaving}
+              className="bg-gradient-primary text-white hover:opacity-90"
+            >
+              {isSaving ? (
+                <>
+                  <div className="animate-spin h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full" />
+                  Saving...
+                </>
+              ) : (
+                "Save Changes"
               )}
             </Button>
           </DialogFooter>
