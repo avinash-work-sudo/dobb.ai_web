@@ -34,6 +34,7 @@ import {
   Home
 } from "lucide-react";
 import { impactAnalysisAPI } from "@/api/impact-analysis";
+import { supabase } from "@/integrations/supabase/client";
 
 const FeatureDetail = () => {
   const { id } = useParams();
@@ -107,14 +108,34 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
     return () => { isMounted = false; };
   }, [id]);
 
-  const handleRefineAccept = () => {
+  const handleRefineAccept = async () => {
     console.log("Accepting refined PRD:", refinedPRD);
-    // Update the impact analysis refined_prd attribute
-    setImpactAnalysis((prev: any) => ({
-      ...prev,
+    
+    // Update the impact analysis refined_prd attribute locally
+    const updatedAnalysis = {
+      ...impactAnalysis,
       refined_prd: refinedPRD
-    }));
-    setOriginalRefinedPRD(refinedPRD); // Update the original so cancel works correctly
+    };
+    setImpactAnalysis(updatedAnalysis);
+    setOriginalRefinedPRD(refinedPRD);
+    
+    // Update the impact_json in the database
+    try {
+      const { error } = await supabase
+        .from('impact_analysis')
+        .update({ 
+          impact_json: updatedAnalysis,
+          updated_at: new Date().toISOString()
+        })
+        .eq('feature_id', id);
+      
+      if (error) {
+        console.error('Failed to update impact analysis in database:', error);
+      }
+    } catch (error) {
+      console.error('Error updating database:', error);
+    }
+    
     setShowRefineModal(false);
   };
 
