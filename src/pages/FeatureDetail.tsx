@@ -251,8 +251,33 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
   const handleGenerateUserStories = async () => {
     setIsGeneratingStories(true);
     try {
-      // TODO: Replace this with actual API call to generate user stories
-      // For now, using dummy data
+      // First check if user stories already exist for this feature
+      const { data: existingStories, error: checkError } = await supabase
+        .from('user_stories')
+        .select('id')
+        .eq('feature_id', id);
+
+      if (checkError) {
+        console.error('Error checking existing user stories:', checkError);
+        toast({
+          title: "Error",
+          description: "Failed to check existing user stories",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // If user stories already exist, just navigate to stories page
+      if (existingStories && existingStories.length > 0) {
+        toast({
+          title: "User Stories Found",
+          description: `Found ${existingStories.length} existing user stories for this feature`,
+        });
+        navigate(`/feature/${id}/stories`);
+        return;
+      }
+
+      // Only generate new user stories if none exist
       const dummyUserStories = [
         {
           title: "User Registration with Email Verification",
