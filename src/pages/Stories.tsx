@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Breadcrumb,
   BreadcrumbEllipsis,
@@ -30,7 +31,8 @@ import {
   ExternalLink,
   Download,
   CheckCircle2,
-  Home
+  Home,
+  Loader2
 } from "lucide-react";
 
 const Stories = () => {
@@ -41,64 +43,86 @@ const Stories = () => {
   const [showJiraModal, setShowJiraModal] = useState(false);
   const [jiraWebhookUrl, setJiraWebhookUrl] = useState("");
   const [isImporting, setIsImporting] = useState(false);
+  const [userStories, setUserStories] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [featureTitle, setFeatureTitle] = useState("Feature");
 
-  // Mock user stories data
-  const userStories = [
-    {
-      id: 1,
-      title: "User Registration with Email Verification",
-      description: "As a new user, I want to register with my email address and verify it through a confirmation link so that I can access the platform securely.",
-      testCases: 8,
-      priority: "High",
-      estimatedHours: 16,
-      acceptanceCriteria: 5,
-    },
-    {
-      id: 2,
-      title: "Secure User Login with Remember Me",
-      description: "As a registered user, I want to log in with my credentials and optionally stay logged in so that I can access my account conveniently.",
-      testCases: 6,
-      priority: "High", 
-      estimatedHours: 12,
-      acceptanceCriteria: 4,
-    },
-    {
-      id: 3,
-      title: "Password Reset via Email",
-      description: "As a user who forgot my password, I want to reset it using my email address so that I can regain access to my account.",
-      testCases: 5,
-      priority: "Medium",
-      estimatedHours: 10,
-      acceptanceCriteria: 3,
-    },
-    {
-      id: 4,
-      title: "Multi-Factor Authentication Setup",
-      description: "As a security-conscious user, I want to enable two-factor authentication so that my account has an additional layer of protection.",
-      testCases: 7,
-      priority: "Medium",
-      estimatedHours: 20,
-      acceptanceCriteria: 6,
-    },
-    {
-      id: 5,
-      title: "Social Login Integration",
-      description: "As a user, I want to log in using my Google or GitHub account so that I can access the platform without creating new credentials.",
-      testCases: 9,
-      priority: "Low",
-      estimatedHours: 24,
-      acceptanceCriteria: 4,
-    },
-    {
-      id: 6,
-      title: "Account Lockout Protection",
-      description: "As a platform admin, I want user accounts to be temporarily locked after multiple failed login attempts so that we can prevent brute force attacks.",
-      testCases: 4,
-      priority: "High",
-      estimatedHours: 8,
-      acceptanceCriteria: 3,
-    }
-  ];
+  // Fetch user stories for this specific feature from Supabase
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchUserStories = async () => {
+      if (!id) return;
+
+      try {
+        // Fetch user stories for this feature
+        const { data: storiesData, error: storiesError } = await supabase
+          .from('user_stories')
+          .select('*')
+          .eq('feature_id', id)
+          .order('created_at', { ascending: true });
+
+        if (storiesError) {
+          console.error('Error fetching user stories:', storiesError);
+          toast({
+            title: "Error",
+            description: "Failed to load user stories",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Also fetch feature info for the title
+        const { data: featureData, error: featureError } = await supabase
+          .from('features')
+          .select(`
+            id,
+            impact_analysis (
+              impact_json
+            )
+          `)
+          .eq('id', id)
+          .single();
+
+        if (!featureError && featureData?.impact_analysis?.[0]) {
+          const analysisData = featureData.impact_analysis[0].impact_json as any;
+          setFeatureTitle(analysisData?.title || `Feature ${id.slice(0, 8)}`);
+        }
+
+        if (!isMounted) return;
+
+        // Transform the data for the UI
+        const transformedStories = storiesData.map((story, index) => ({
+          id: index + 1, // Use index for UI IDs
+          dbId: story.id, // Keep original DB ID
+          title: story.title,
+          description: story.description,
+          testCases: story.test_cases?.length || 0,
+          priority: story.priority?.charAt(0).toUpperCase() + story.priority?.slice(1) || "Medium",
+          estimatedHours: story.estimated_hours || 0,
+          acceptanceCriteria: story.acceptance_criteria?.length || 0,
+          status: story.status,
+        }));
+
+        setUserStories(transformedStories);
+
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        if (isMounted) {
+          toast({
+            title: "Error", 
+            description: "Failed to load user stories",
+            variant: "destructive",
+          });
+        }
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+
+    fetchUserStories();
+    return () => { isMounted = false; };
+  }, [id, toast]);
 
   const handleSelectStory = (storyId: number, checked: boolean) => {
     if (checked) {
@@ -189,6 +213,52 @@ const Stories = () => {
     }
   };
 
+  // Show loading state while fetching data
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="border-b border-border bg-surface-elevated">
+          <div className="container mx-auto px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => navigate(`/feature/${id}`)}
+                  className="hover:bg-surface-subtle"
+                >
+                  <ArrowLeft className="h-5 w-5 text-muted-foreground" />
+                </Button>
+                <div className="bg-gradient-primary p-2 rounded-lg shadow-elegant">
+                  <BarChart3 className="h-6 w-6 text-white" />
+                </div>
+                <h1 className="text-xl font-bold text-foreground">DOBB.ai</h1>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main className="container mx-auto px-6 py-8">
+          <div className="max-w-4xl mx-auto">
+            <Card className="bg-surface-elevated border border-border">
+              <CardContent className="pt-6">
+                <div className="text-center py-12">
+                  <Loader2 className="h-16 w-16 text-primary mx-auto animate-spin mb-6" />
+                  <h3 className="text-xl font-semibold text-foreground mb-4">
+                    Loading User Stories
+                  </h3>
+                  <p className="text-muted-foreground">
+                    Fetching user stories for this feature...
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {/* Top Bar */}
@@ -252,7 +322,7 @@ const Stories = () => {
                     onClick={() => navigate(`/feature/${id}`)}
                     className="cursor-pointer"
                   >
-                    User Authentication System
+                    {featureTitle}
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
@@ -269,7 +339,7 @@ const Stories = () => {
               Generated User Stories
             </h1>
             <p className="text-lg text-muted-foreground">
-              AI-generated user stories for the User Authentication System feature
+              AI-generated user stories for the {featureTitle} feature
             </p>
           </div>
 
