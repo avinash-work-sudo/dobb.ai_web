@@ -123,12 +123,16 @@ const ChatBot = () => {
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50">
-      <Card 
-        className={`bg-surface-elevated border border-border shadow-elegant transition-all duration-300 ${
-          isMinimized ? 'w-80 h-16' : 'w-96 h-[500px]'
-        }`}
-      >
+    <>
+      {/* Mobile overlay */}
+      <div className="md:hidden fixed inset-0 bg-black/50 z-40" onClick={() => setIsOpen(false)} />
+      
+      <div className={`fixed z-50 ${isMinimized ? 'bottom-6 right-6' : 'md:bottom-6 md:right-6 inset-x-4 bottom-4 md:inset-auto'}`}>
+        <Card 
+          className={`bg-surface-elevated border border-border shadow-elegant transition-all duration-300 ${
+            isMinimized ? 'w-80 h-16' : 'w-full h-[calc(100vh-2rem)] md:w-96 md:h-[500px]'
+          }`}
+        >
         <CardHeader className="flex flex-row items-center justify-between p-4 border-b border-border">
           <div className="flex items-center space-x-3">
             <div className="relative">
@@ -165,7 +169,7 @@ const ChatBot = () => {
         </CardHeader>
 
         {!isMinimized && (
-          <CardContent className="p-0 flex flex-col h-[calc(500px-73px)]">
+          <CardContent className="p-0 flex flex-col h-[calc(500px-73px)] md:h-[calc(500px-73px)] h-[calc(100vh-8rem)]">
             <ScrollArea className="flex-1 p-4">
               <div className="space-y-4">
                 {messages.map((message) => (
@@ -252,6 +256,7 @@ const ChatBot = () => {
         )}
       </Card>
     </div>
+    </>
   );
 };
 
