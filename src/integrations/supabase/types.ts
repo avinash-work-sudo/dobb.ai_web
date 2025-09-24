@@ -14,7 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      features: {
+        Row: {
+          analysis_started: boolean | null
+          created_at: string
+          figma_link: string | null
+          file_url: string | null
+          id: string
+          prd_link: string | null
+          status: string | null
+          transcript_link: string | null
+          updated_at: string
+        }
+        Insert: {
+          analysis_started?: boolean | null
+          created_at?: string
+          figma_link?: string | null
+          file_url?: string | null
+          id?: string
+          prd_link?: string | null
+          status?: string | null
+          transcript_link?: string | null
+          updated_at?: string
+        }
+        Update: {
+          analysis_started?: boolean | null
+          created_at?: string
+          figma_link?: string | null
+          file_url?: string | null
+          id?: string
+          prd_link?: string | null
+          status?: string | null
+          transcript_link?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

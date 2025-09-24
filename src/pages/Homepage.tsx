@@ -6,6 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
+import { UploadCard } from "@/components/UploadCard";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Settings, 
   User, 
@@ -21,23 +24,84 @@ import {
 
 const Homepage = () => {
   const navigate = useNavigate();
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const { toast } = useToast();
+  const [fileUrl, setFileUrl] = useState<string>("");
   const [prdLink, setPrdLink] = useState("");
   const [figmaLink, setFigmaLink] = useState("");
   const [transcriptLink, setTranscriptLink] = useState("");
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
+  const handleAnalyze = async () => {
+    if (!fileUrl && !prdLink && !figmaLink && !transcriptLink) {
+      toast({
+        title: "No data provided",
+        description: "Please upload a file or provide at least one link.",
+        variant: "destructive",
+      });
+      return;
     }
-  };
 
-  const handleAnalyze = () => {
-    // Here you would typically send the data to your backend for analysis
-    console.log("Analyzing:", { selectedFile, prdLink, figmaLink, transcriptLink });
-    // Navigate to features page or show loading state
-    navigate('/features');
+    setIsAnalyzing(true);
+    try {
+      // Create feature record in Supabase
+      const { data: feature, error: featureError } = await supabase
+        .from('features')
+        .insert({
+          file_url: fileUrl || null,
+          prd_link: prdLink || null,
+          figma_link: figmaLink || null,
+          transcript_link: transcriptLink || null,
+          status: 'processing'
+        })
+        .select()
+        .single();
+
+      if (featureError) {
+        throw featureError;
+      }
+
+      // Start impact analysis (dummy API call)
+      const response = await fetch('/api/impact-analysis/start', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          featureId: feature.id,
+          fileUrl: fileUrl,
+          prdLink: prdLink,
+          figmaLink: figmaLink,
+          transcriptLink: transcriptLink
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to start impact analysis');
+      }
+
+      // Update feature status to indicate analysis started
+      await supabase
+        .from('features')
+        .update({ analysis_started: true })
+        .eq('id', feature.id);
+
+      toast({
+        title: "Analysis started",
+        description: "Your feature analysis has been started successfully.",
+      });
+
+      // Navigate to features page
+      navigate('/features');
+    } catch (error) {
+      console.error('Analysis error:', error);
+      toast({
+        title: "Analysis failed",
+        description: "Failed to start analysis. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   return (
@@ -101,86 +165,45 @@ const Homepage = () => {
                 </TabsList>
 
                 <TabsContent value="upload" className="mt-6">
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="file-upload" className="text-sm font-medium text-foreground">
-                        Upload PRD Document
-                      </Label>
-                      <div className="mt-2 flex items-center justify-center w-full">
-                        <label
-                          htmlFor="file-upload"
-                          className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-lg cursor-pointer bg-surface-subtle hover:bg-surface-elevated transition-colors"
-                        >
-                          <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                            <FileText className="w-8 h-8 mb-3 text-muted-foreground" />
-                            <p className="mb-2 text-sm text-foreground">
-                              <span className="font-semibold">Click to upload</span> or drag and drop
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              PDF, DOCX, MD (MAX. 20MB)
-                            </p>
-                          </div>
-                          <input
-                            id="file-upload"
-                            type="file"
-                            className="hidden"
-                            accept=".pdf,.docx,.md"
-                            onChange={handleFileUpload}
-                          />
-                        </label>
-                      </div>
-                      {selectedFile && (
-                        <p className="mt-2 text-sm text-primary">
-                          Selected: {selectedFile.name}
-                        </p>
-                      )}
-                    </div>
-                  </div>
+                  <UploadCard
+                    title="PRD Document"
+                    description="Upload your Product Requirements Document"
+                    icon={<FileText className="h-6 w-6" />}
+                    acceptsFile={true}
+                    fileTypes={["pdf", "docx", "md"]}
+                    placeholder="Upload PRD document..."
+                    onFileUpload={(url) => setFileUrl(url)}
+                  />
                 </TabsContent>
 
                 <TabsContent value="links" className="mt-6">
                   <div className="space-y-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="prd-link" className="flex items-center space-x-2">
-                        <FileText className="h-4 w-4 text-primary" />
-                        <span>PRD Link</span>
-                      </Label>
-                      <Input
-                        id="prd-link"
-                        placeholder="https://confluence.example.com/prd..."
-                        value={prdLink}
-                        onChange={(e) => setPrdLink(e.target.value)}
-                        className="bg-surface-subtle border-border"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="figma-link" className="flex items-center space-x-2">
-                        <Figma className="h-4 w-4 text-primary" />
-                        <span>Figma Design Link</span>
-                      </Label>
-                      <Input
-                        id="figma-link"
-                        placeholder="https://figma.com/file/..."
-                        value={figmaLink}
-                        onChange={(e) => setFigmaLink(e.target.value)}
-                        className="bg-surface-subtle border-border"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="transcript-link" className="flex items-center space-x-2">
-                        <Mic className="h-4 w-4 text-primary" />
-                        <span>Meeting Transcript Link</span>
-                      </Label>
-                      <Input
-                        id="transcript-link"
-                        placeholder="https://meet.google.com/transcript/..."
-                        value={transcriptLink}
-                        onChange={(e) => setTranscriptLink(e.target.value)}
-                        className="bg-surface-subtle border-border"
-                      />
-                    </div>
+                    <UploadCard
+                      title="PRD Link"
+                      description="Link to your Product Requirements Document"
+                      icon={<FileText className="h-6 w-6" />}
+                      acceptsUrl={true}
+                      placeholder="https://confluence.example.com/prd..."
+                      onUrlSubmit={(url) => setPrdLink(url)}
+                    />
+                    
+                    <UploadCard
+                      title="Figma Design"
+                      description="Link to your Figma design file"
+                      icon={<Figma className="h-6 w-6" />}
+                      acceptsUrl={true}
+                      placeholder="https://figma.com/file/..."
+                      onUrlSubmit={(url) => setFigmaLink(url)}
+                    />
+                    
+                    <UploadCard
+                      title="Meeting Transcript"
+                      description="Link to your meeting transcript"
+                      icon={<Mic className="h-6 w-6" />}
+                      acceptsUrl={true}
+                      placeholder="https://meet.google.com/transcript/..."
+                      onUrlSubmit={(url) => setTranscriptLink(url)}
+                    />
                   </div>
                 </TabsContent>
               </Tabs>
@@ -189,9 +212,9 @@ const Homepage = () => {
                 <Button 
                   onClick={handleAnalyze}
                   className="bg-gradient-primary text-white hover:opacity-90 transition-all duration-300"
-                  disabled={!selectedFile && !prdLink && !figmaLink && !transcriptLink}
+                  disabled={(!fileUrl && !prdLink && !figmaLink && !transcriptLink) || isAnalyzing}
                 >
-                  Start Analysis
+                  {isAnalyzing ? "Starting Analysis..." : "Start Analysis"}
                 </Button>
               </div>
             </CardContent>

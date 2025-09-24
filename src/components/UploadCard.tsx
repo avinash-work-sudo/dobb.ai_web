@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Upload, Link, FileText, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface UploadCardProps {
   title: string;
@@ -13,6 +14,8 @@ interface UploadCardProps {
   acceptsFile?: boolean;
   fileTypes?: string[];
   placeholder?: string;
+  onFileUpload?: (url: string) => void;
+  onUrlSubmit?: (url: string) => void;
 }
 
 export const UploadCard = ({ 
@@ -22,10 +25,13 @@ export const UploadCard = ({
   acceptsUrl = false, 
   acceptsFile = false,
   fileTypes = [],
-  placeholder = "Enter URL or upload file..."
+  placeholder = "Enter URL or upload file...",
+  onFileUpload,
+  onUrlSubmit
 }: UploadCardProps) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [isUploaded, setIsUploaded] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [urlInput, setUrlInput] = useState("");
   const { toast } = useToast();
 
@@ -48,17 +54,49 @@ export const UploadCard = ({
     }
   };
 
-  const handleFileUpload = (file: File) => {
-    setIsUploaded(true);
-    toast({
-      title: "File uploaded",
-      description: `${file.name} has been uploaded successfully.`,
-    });
+  const handleFileUpload = async (file: File) => {
+    if (!acceptsFile) return;
+    
+    setIsUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      
+      const { data, error } = await supabase.storage
+        .from('documents')
+        .upload(fileName, file);
+
+      if (error) {
+        throw error;
+      }
+
+      const { data: urlData } = supabase.storage
+        .from('documents')
+        .getPublicUrl(fileName);
+
+      setIsUploaded(true);
+      onFileUpload?.(urlData.publicUrl);
+      
+      toast({
+        title: "File uploaded",
+        description: `${file.name} has been uploaded successfully.`,
+      });
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload file. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleUrlSubmit = () => {
     if (urlInput.trim()) {
       setIsUploaded(true);
+      onUrlSubmit?.(urlInput.trim());
       toast({
         title: "URL added",
         description: `${title} URL has been added successfully.`,
@@ -107,15 +145,35 @@ export const UploadCard = ({
               {acceptsFile && (
                 <div className="flex items-center justify-center border-2 border-dashed border-border rounded-lg p-4 hover:border-primary/50 transition-colors">
                   <div className="text-center">
-                    <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-sm text-muted-foreground">
-                      Drop files here or{" "}
-                      <button className="text-primary hover:underline">browse</button>
-                    </p>
-                    {fileTypes.length > 0 && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Supports: {fileTypes.join(", ")}
-                      </p>
+                    {isUploading ? (
+                      <div className="flex flex-col items-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+                        <p className="text-sm text-muted-foreground">Uploading...</p>
+                      </div>
+                    ) : (
+                      <>
+                        <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-sm text-muted-foreground">
+                          Drop files here or{" "}
+                          <label className="text-primary hover:underline cursor-pointer">
+                            browse
+                            <input
+                              type="file"
+                              className="hidden"
+                              accept={fileTypes.map(type => `.${type}`).join(',')}
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleFileUpload(file);
+                              }}
+                            />
+                          </label>
+                        </p>
+                        {fileTypes.length > 0 && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Supports: {fileTypes.join(", ")}
+                          </p>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
