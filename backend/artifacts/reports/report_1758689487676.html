@@ -1,0 +1,77 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automation Report - Playwright</title>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .stat-card { background: white; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .stat-value { font-size: 2em; font-weight: bold; color: #3b82f6; }
+        .stat-label { color: #6b7280; margin-top: 5px; }
+        .steps { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .step { padding: 15px; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; gap: 15px; }
+        .step:last-child { border-bottom: none; }
+        .step-status { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; }
+        .step-success { background: #10b981; }
+        .step-error { background: #ef4444; }
+        .step-content { flex: 1; }
+        .step-instruction { font-weight: 500; margin-bottom: 5px; }
+        .step-meta { color: #6b7280; font-size: 0.9em; }
+        .screenshot { max-width: 200px; border-radius: 4px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎭 Playwright Automation Report</h1>
+            <p><strong>Generated:</strong> 24/9/2025, 10:21:27 am</p>
+            <p><strong>Framework:</strong> Playwright</p>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value">1</div>
+                <div class="stat-label">Total Steps</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">1</div>
+                <div class="stat-label">Passed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">0</div>
+                <div class="stat-label">Failed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">100%</div>
+                <div class="stat-label">Success Rate</div>
+            </div>
+        </div>
+
+        <div class="steps">
+            <h2 style="margin: 0; padding: 20px; background: #f9fafb; border-bottom: 1px solid #e5e7eb;">Execution Steps</h2>
+            
+                <div class="step">
+                    <div class="step-status step-success">
+                        1
+                    </div>
+                    <div class="step-content">
+                        <div class="step-instruction">Navigate to httpbin.org and check the page content</div>
+                        <div class="step-meta">
+                            Duration: 5212ms | 
+                            Status: Success |
+                            URL: https://httpbin.org/
+                            
+                        </div>
+                    </div>
+                    <img src="artifacts/screenshots/step_1_1758689487475.png" class="screenshot" alt="Step 1 screenshot">
+                </div>
+            
+        </div>
+    </div>
+</body>
+</html>

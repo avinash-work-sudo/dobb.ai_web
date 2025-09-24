@@ -218,3 +218,4 @@ function getMimeType(extension) {
 }
 
 export default router;
+

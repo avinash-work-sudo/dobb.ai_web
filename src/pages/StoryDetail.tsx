@@ -7,6 +7,16 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+
+interface TestCase {
+  id: number;
+  name: string;
+  status: string;
+  description: string;
+  steps: string[];
+  expectedResult: string;
+  priority: string;
+}
 import {
   Breadcrumb,
   BreadcrumbEllipsis,
@@ -37,8 +47,7 @@ const StoryDetail = () => {
   const { toast } = useToast();
   const [selectedTestCases, setSelectedTestCases] = useState<number[]>([]);
   const [showTestStepsModal, setShowTestStepsModal] = useState(false);
-  const [selectedTestCase, setSelectedTestCase] = useState<any>(null);
-  const [runningTests, setRunningTests] = useState<number[]>([]);
+  const [selectedTestCase, setSelectedTestCase] = useState<TestCase | null>(null);
 
   // Mock story data
   const story = {
@@ -195,19 +204,11 @@ const StoryDetail = () => {
   };
 
   const handleRunTest = async (testCaseId: number) => {
-    setRunningTests([...runningTests, testCaseId]);
-    
-    // Simulate test execution
-    setTimeout(() => {
-      setRunningTests(runningTests.filter(id => id !== testCaseId));
-      toast({
-        title: "Test Executed",
-        description: `Test case ${testCaseId} has been executed successfully.`,
-      });
-    }, 3000);
+    // Navigate to the TestCaseRunner page
+    navigate(`/feature/${id}/stories/${storyId}/test-case/${testCaseId}`);
   };
 
-  const handleViewTestCase = (testCase: any) => {
+  const handleViewTestCase = (testCase: TestCase) => {
     setSelectedTestCase(testCase);
     setShowTestStepsModal(true);
   };
@@ -423,6 +424,18 @@ const StoryDetail = () => {
                 variant="outline"
                 disabled={selectedTestCases.length === 0}
                 className="border-border hover:bg-surface-subtle"
+                onClick={() => {
+                  if (selectedTestCases.length > 0) {
+                    const firstTestCase = selectedTestCases[0];
+                    if (selectedTestCases.length > 1) {
+                      toast({
+                        title: "Running First Test Case",
+                        description: `Running test case ${firstTestCase}. You can run others individually.`,
+                      });
+                    }
+                    handleRunTest(firstTestCase);
+                  }
+                }}
               >
                 <Play className="h-4 w-4 mr-2" />
                 Run Selected ({selectedTestCases.length})
@@ -496,14 +509,10 @@ const StoryDetail = () => {
                             variant="ghost" 
                             size="sm"
                             onClick={() => handleRunTest(testCase.id)}
-                            disabled={runningTests.includes(testCase.id)}
                             className="hover:bg-surface-subtle"
+                            title="Run test case"
                           >
-                            {runningTests.includes(testCase.id) ? (
-                              <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full" />
-                            ) : (
-                              <Play className="h-4 w-4" />
-                            )}
+                            <Play className="h-4 w-4" />
                           </Button>
                         </div>
                       </TableCell>

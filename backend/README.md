@@ -244,3 +244,4 @@ node -e "console.log(require('puppeteer').executablePath())"
 ## 📄 License
 
 MIT License - see LICENSE file for details
+

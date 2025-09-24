@@ -262,3 +262,4 @@ export class TestResultStorage {
     await db.runAsync('DELETE FROM test_executions WHERE id = ?', [executionId]);
   }
 }
+

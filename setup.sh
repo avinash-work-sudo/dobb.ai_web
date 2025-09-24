@@ -223,3 +223,4 @@ echo "  Frontend: http://localhost:5173"
 echo "  Backend:  See backend/README.md"
 echo ""
 print_status "Happy automating! 🤖"
+

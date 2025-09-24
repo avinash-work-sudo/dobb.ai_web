@@ -318,3 +318,4 @@ Your system is working correctly if:
 ---
 
 **Ready to test? Start with:** `./start.sh` then visit http://localhost:5173! 🚀
+

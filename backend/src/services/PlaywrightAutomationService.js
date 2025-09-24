@@ -1,6 +1,6 @@
 import { chromium, firefox, webkit } from 'playwright';
 import { PlaywrightAgent } from '@midscene/web/playwright';
-import { mkdir, writeFile } from 'fs/promises';
+import { mkdir, writeFile, readFile, readdir } from 'fs/promises';
 import { join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -87,6 +87,7 @@ export class PlaywrightAutomationService {
     const executionStart = Date.now();
     this.steps = [];
     this.artifacts = [];
+    let executionResult;
 
     try {
       // Take initial screenshot
@@ -101,8 +102,11 @@ export class PlaywrightAutomationService {
         });
       }
 
+      // Pre-process task for direct navigation if needed
+      const preprocessedTask = await this.preprocessTask(task);
+      
       // Execute the main task
-      const result = await this.executeTaskWithTracking(task);
+      const result = await this.executeTaskWithTracking(preprocessedTask);
       
       // Take final screenshot
       await this.captureScreenshot('final_state');
@@ -112,7 +116,7 @@ export class PlaywrightAutomationService {
 
       const duration = Date.now() - executionStart;
 
-      return {
+      executionResult = {
         success: true,
         result,
         duration,
@@ -129,14 +133,91 @@ export class PlaywrightAutomationService {
       
       const duration = Date.now() - executionStart;
 
-      return {
+      executionResult = {
         success: false,
         error: error.message,
         duration,
         steps: this.steps,
         artifacts: this.artifacts
       };
+    } finally {
+      try {
+        await this.customizeAgentReportBranding();
+      } catch (brandingError) {
+        console.warn('Branding customization skipped:', brandingError.message);
+      }
     }
+
+    return executionResult;
+  }
+
+  async preprocessTask(task) {
+    // First, check if this is a complex e-commerce task that needs decomposition
+    const ecommercePattern = /(?:goto|go to|visit)\s+([a-zA-Z0-9.-]+).*(?:and\s+)?(?:add|buy|purchase|find)\s+(?:a\s+)?([a-zA-Z0-9\s-]+?)\s+(?:to\s+)?(?:my\s+)?(?:cart|basket)/i;
+    const ecommerceMatch = task.match(ecommercePattern);
+    
+    if (ecommerceMatch) {
+      const site = ecommerceMatch[1];
+      const product = ecommerceMatch[2].trim();
+      
+      console.log(`🛒 E-commerce task detected: ${site} + ${product}`);
+      console.log(`🔄 Decomposing into search + add to cart workflow`);
+      
+      // Return a more detailed, step-by-step task
+      return `First navigate to ${site}, then search for "${product}", then click on a suitable product result, and finally add it to cart`;
+    }
+    
+    // Check if the task involves navigating to a specific URL or common site names
+    // Also handle decomposed tasks that start with "First navigate to..."
+    const urlPattern = /(?:^|First\s+|Then\s+)?(?:navigate to|go to|goto|visit|open)\s*([a-zA-Z0-9.-]+(?:\.[a-zA-Z]{2,})?(?:\/\S*)?)/i;
+    const match = task.match(urlPattern);
+    
+    if (match) {
+      let url = match[1];
+      
+      // Common site names mapping
+      const commonSites = {
+        'flipkart': 'flipkart.com',
+        'amazon': 'amazon.com', 
+        'google': 'google.com',
+        'youtube': 'youtube.com',
+        'facebook': 'facebook.com',
+        'twitter': 'twitter.com',
+        'github': 'github.com',
+        'linkedin': 'linkedin.com'
+      };
+      
+      // Check if it's a common site name without domain
+      if (commonSites[url.toLowerCase()]) {
+        url = commonSites[url.toLowerCase()];
+      }
+      
+      // Add protocol if missing
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'https://' + url;
+      }
+      
+      console.log(`🔗 Direct navigation detected: ${url}`);
+      console.log(`📍 Current page URL before navigation: ${this.page.url()}`);
+      
+      try {
+        console.log(`⏳ Attempting to navigate to: ${url}`);
+        await this.page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+        console.log(`✅ Successfully navigated to ${url}`);
+        console.log(`📍 New page URL: ${this.page.url()}`);
+        console.log(`📄 Page title: ${await this.page.title()}`);
+        
+        // Return a modified task that works with the loaded page
+        const modifiedTask = task.replace(urlPattern, 'interact with the current page');
+        console.log(`🔄 Task modified: "${modifiedTask}"`);
+        return modifiedTask;
+      } catch (error) {
+        console.log(`⚠️ Failed to navigate to ${url}, will try AI-based navigation: ${error.message}`);
+        return task;
+      }
+    }
+    
+    return task;
   }
 
   async executeTaskWithTracking(task) {
@@ -166,7 +247,14 @@ export class PlaywrightAutomationService {
       }
 
       // Execute with Midscene
+      console.log(`🤖 Executing AI action: "${task}"`);
+      console.log(`📍 Page URL at execution: ${this.page.url()}`);
+      console.log(`📏 Page content length: ${(await this.page.content()).length} chars`);
+      
       const result = await this.agent.aiAction(task);
+      
+      console.log(`✅ AI action completed successfully`);
+      console.log(`📋 Result:`, result);
 
       // Update step
       step.success = true;
@@ -341,6 +429,209 @@ export class PlaywrightAutomationService {
     </div>
 </body>
 </html>`;
+  }
+
+  async customizeAgentReportBranding() {
+    const runDir = process.env.MIDSCENE_RUN_DIR || 'midscene_run';
+    const candidateDirs = [
+      join(process.cwd(), runDir, 'report'),
+      join(process.cwd(), 'backend', runDir, 'report')
+    ];
+    const svgIcon = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="12" fill="#101010" />
+  <text x="50%" y="52%" text-anchor="middle" dominant-baseline="middle" fill="#00E5A0" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700">DOBB</text>
+</svg>
+`.trim();
+    const faviconDataUri = `data:image/svg+xml;base64,${Buffer.from(svgIcon).toString('base64')}`;
+    const brandMarker = 'data-origin="dobb-ai-branding"';
+    const brandingScript = `
+    <!-- DOBB.ai branding override -->
+    <script data-origin="dobb-ai-branding">
+      (function() {
+        const BRAND = 'DOBB.ai';
+        const FAVICON_DATA = '${faviconDataUri}';
+        const SHOW_TEXT = (window.NodeFilter && window.NodeFilter.SHOW_TEXT) || 4;
+        const FILTER_ACCEPT = (window.NodeFilter && window.NodeFilter.FILTER_ACCEPT) || 1;
+        const FILTER_REJECT = (window.NodeFilter && window.NodeFilter.FILTER_REJECT) || 2;
+        const FILTER_SKIP = (window.NodeFilter && window.NodeFilter.FILTER_SKIP) || 3;
+
+        const replaceTextNodes = (root) => {
+          if (!root) return;
+          const walker = document.createTreeWalker(
+            root,
+            SHOW_TEXT,
+            {
+              acceptNode(node) {
+                const parent = node.parentNode;
+                if (!parent) {
+                  return FILTER_SKIP;
+                }
+                const tag = parent.nodeName;
+                if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'NOSCRIPT') {
+                  return FILTER_REJECT;
+                }
+                return /Midscene/i.test(node.nodeValue) ? FILTER_ACCEPT : FILTER_SKIP;
+              }
+            }
+          );
+
+          let current;
+          while ((current = walker.nextNode())) {
+            const updated = current.nodeValue
+              .replace(/Midscene\.js/g, BRAND)
+              .replace(/Midscene/gi, BRAND);
+            if (updated !== current.nodeValue) {
+              current.nodeValue = updated;
+            }
+          }
+        };
+
+        const updateLogos = () => {
+          const selectors = [
+            "img[src*='midscene']",
+            "img[alt*='Midscene']",
+            "img[alt*='midscene']"
+          ];
+          selectors.forEach(selector => {
+            document.querySelectorAll(selector).forEach(img => {
+              if (img.dataset.dobbBrandingApplied === 'true') {
+                return;
+              }
+              img.dataset.dobbBrandingApplied = 'true';
+              img.alt = BRAND;
+              img.src = FAVICON_DATA;
+              img.removeAttribute('srcset');
+            });
+          });
+        };
+
+        const updateLinks = () => {
+          document.querySelectorAll("a[href*='midscene']").forEach(anchor => {
+            if (anchor.dataset.dobbBrandingApplied === 'true') {
+              return;
+            }
+            anchor.dataset.dobbBrandingApplied = 'true';
+            anchor.href = 'https://dobb.ai';
+            if (anchor.textContent && /Midscene/i.test(anchor.textContent)) {
+              anchor.textContent = anchor.textContent.replace(/Midscene/gi, BRAND);
+            }
+          });
+        };
+
+        const updateTitle = () => {
+          if (!document.title) {
+            return;
+          }
+          const nextTitle = document.title
+            .replace(/Midscene\.js/g, BRAND)
+            .replace(/Midscene/gi, BRAND);
+          if (nextTitle !== document.title) {
+            document.title = nextTitle;
+          }
+        };
+
+        const ensureFavicon = () => {
+          let favicon = document.querySelector("link[rel='icon']");
+          if (!favicon) {
+            favicon = document.createElement('link');
+            favicon.rel = 'icon';
+            if (document.head) {
+              document.head.appendChild(favicon);
+            }
+          }
+          if (favicon) {
+            favicon.type = 'image/svg+xml';
+            favicon.href = FAVICON_DATA;
+            favicon.sizes = 'any';
+          }
+        };
+
+        const applyBranding = () => {
+          replaceTextNodes(document.body);
+          updateLogos();
+          updateLinks();
+          updateTitle();
+          ensureFavicon();
+        };
+
+        const run = () => {
+          applyBranding();
+          setTimeout(applyBranding, 400);
+          setTimeout(applyBranding, 1200);
+        };
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', run, { once: true });
+        } else {
+          run();
+        }
+      })();
+    </script>
+    `;
+
+    let updatedFiles = 0;
+    const visited = new Set();
+
+    for (const dir of candidateDirs) {
+      if (visited.has(dir)) {
+        continue;
+      }
+      visited.add(dir);
+
+      let files;
+      try {
+        files = await readdir(dir);
+      } catch {
+        continue;
+      }
+
+      for (const fileName of files) {
+        if (!fileName.endsWith('.html')) {
+          continue;
+        }
+
+        const filePath = join(dir, fileName);
+        let content;
+        try {
+          content = await readFile(filePath, 'utf-8');
+        } catch {
+          continue;
+        }
+
+        let modified = false;
+
+        if (content.includes('Report - Midscene.js')) {
+          content = content.replace('Report - Midscene.js', 'Report - DOBB.ai');
+          modified = true;
+        }
+
+        const originalFavicon = 'href="https://lf3-static.bytednsdoc.com/obj/eden-cn/vhaeh7vhabf/favicon-32x32.png"';
+        if (content.includes(originalFavicon)) {
+          content = content.replace(originalFavicon, `href="${faviconDataUri}"`);
+          modified = true;
+        }
+
+        if (!content.includes(brandMarker)) {
+          if (content.includes('</head>')) {
+            content = content.replace('</head>', `${brandingScript}</head>`);
+            modified = true;
+          } else if (content.includes('</body>')) {
+            content = content.replace('</body>', `${brandingScript}</body>`);
+            modified = true;
+          }
+        }
+
+        if (modified) {
+          await writeFile(filePath, content, 'utf-8');
+          updatedFiles += 1;
+        }
+      }
+    }
+
+    if (updatedFiles > 0) {
+      console.log(`🎨 Applied DOBB.ai branding to ${updatedFiles} report${updatedFiles === 1 ? '' : 's'}.`);
+    }
   }
 
   async cleanup() {

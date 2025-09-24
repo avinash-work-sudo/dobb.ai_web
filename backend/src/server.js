@@ -19,6 +19,12 @@ import { initDatabase } from './database/init.js';
 // Load environment variables
 dotenv.config();
 
+// Override with mock configuration for Midscene if not in production
+if (process.env.NODE_ENV !== 'production') {
+  process.env.MIDSCENE_MODEL_PROVIDER = process.env.MIDSCENE_MODEL_PROVIDER || 'mock';
+  process.env.OPENAI_API_KEY = process.env.OPENAI_API_KEY || 'mock-key-for-testing';
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -142,7 +148,9 @@ server.listen(PORT, () => {
   console.log(`📊 Health check: http://localhost:${PORT}/health`);
   console.log(`🔗 Frontend CORS: ${process.env.CORS_ORIGIN || 'http://localhost:5173'}`);
   console.log(`🤖 Midscene Provider: ${process.env.MIDSCENE_MODEL_PROVIDER || 'Not configured'}`);
-  console.log(`🔑 OpenAI API Key: ${process.env.OPENAI_API_KEY ? 'Configured' : 'Missing'}`);
+  console.log(`🔑 API Key: ${process.env.OPENAI_API_KEY ? 'Configured' : 'Missing'}`);
+  console.log(`🌐 API   : ${process.env.OPENAI_API_BASE || 'Default (OpenAI)'}`);
+  console.log(`🧠 Model: ${process.env.OPENAI_MODEL || 'Default'}`);
 });
 
 // Graceful shutdown
