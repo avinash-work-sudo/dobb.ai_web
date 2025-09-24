@@ -60,8 +60,6 @@ const FeatureDetail = () => {
     const modules = analysis?.impactedModules || [];
     const tech = analysis?.technicalImpacts || [];
     const gaps = analysis?.identifiedGaps || [];
-    const recs = analysis?.recommendations || [];
-
     return `# Refined PRD: ${feature.title}
 
 ## Overview
@@ -81,9 +79,6 @@ ${tech.map((t: any) => `- ${t.category} (${t.complexity}): ${t.changes.join(", "
 
 ## Identified Gaps
 ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recommendation: ${g.recommendation}`).join("\n") || "- No gaps identified"}
-
-## Recommendations
-${recs.map((r: string) => `- ${r}`).join("\n") || "- None"}
 `;
   };
 
