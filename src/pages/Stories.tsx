@@ -144,14 +144,45 @@ const Stories = () => {
     }
   };
 
-  const handleEditStory = (story: any) => {
-    setEditingStory({
-      ...story,
-      // Convert arrays back to strings for editing
-      acceptance_criteria: story.acceptanceCriteria || [],
-      test_cases: story.testCases || []
-    });
-    setShowEditModal(true);
+  const handleEditStory = async (story: any) => {
+    try {
+      // Fetch the full story data from database to get arrays
+      const { data: fullStoryData, error } = await supabase
+        .from('user_stories')
+        .select('*')
+        .eq('id', story.dbId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching story details:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load story details for editing",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setEditingStory({
+        ...story,
+        title: fullStoryData.title,
+        description: fullStoryData.description,
+        priority: fullStoryData.priority?.charAt(0).toUpperCase() + fullStoryData.priority?.slice(1) || "Medium",
+        estimatedHours: fullStoryData.estimated_hours || 0,
+        // Use actual arrays from database
+        acceptance_criteria: fullStoryData.acceptance_criteria || [],
+        test_cases: fullStoryData.test_cases || []
+      });
+      setShowEditModal(true);
+
+    } catch (error) {
+      console.error('Error loading story for editing:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load story details",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleSaveStory = async () => {
@@ -727,12 +758,12 @@ const Stories = () => {
               <div className="space-y-2">
                 <Label>Acceptance Criteria</Label>
                 <div className="space-y-2">
-                  {editingStory.acceptance_criteria?.map((criteria: string, index: number) => (
+                  {(editingStory.acceptance_criteria || [])?.map((criteria: string, index: number) => (
                     <div key={index} className="flex gap-2">
                       <Input
                         value={criteria}
                         onChange={(e) => {
-                          const newCriteria = [...editingStory.acceptance_criteria];
+                          const newCriteria = [...(editingStory.acceptance_criteria || [])];
                           newCriteria[index] = e.target.value;
                           setEditingStory({...editingStory, acceptance_criteria: newCriteria});
                         }}
@@ -743,7 +774,7 @@ const Stories = () => {
                         variant="outline"
                         size="sm"
                         onClick={() => {
-                          const newCriteria = editingStory.acceptance_criteria.filter((_: any, i: number) => i !== index);
+                          const newCriteria = (editingStory.acceptance_criteria || []).filter((_: any, i: number) => i !== index);
                           setEditingStory({...editingStory, acceptance_criteria: newCriteria});
                         }}
                       >
@@ -769,12 +800,12 @@ const Stories = () => {
               <div className="space-y-2">
                 <Label>Test Cases</Label>
                 <div className="space-y-2">
-                  {editingStory.test_cases?.map((testCase: string, index: number) => (
+                  {(editingStory.test_cases || [])?.map((testCase: string, index: number) => (
                     <div key={index} className="flex gap-2">
                       <Input
                         value={testCase}
                         onChange={(e) => {
-                          const newTestCases = [...editingStory.test_cases];
+                          const newTestCases = [...(editingStory.test_cases || [])];
                           newTestCases[index] = e.target.value;
                           setEditingStory({...editingStory, test_cases: newTestCases});
                         }}
@@ -785,7 +816,7 @@ const Stories = () => {
                         variant="outline"
                         size="sm"
                         onClick={() => {
-                          const newTestCases = editingStory.test_cases.filter((_: any, i: number) => i !== index);
+                          const newTestCases = (editingStory.test_cases || []).filter((_: any, i: number) => i !== index);
                           setEditingStory({...editingStory, test_cases: newTestCases});
                         }}
                       >
