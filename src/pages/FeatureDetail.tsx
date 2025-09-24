@@ -99,14 +99,9 @@ ${recs.map((r: string) => `- ${r}`).join("\n") || "- None"}
         });
         if (!isMounted) return;
         setImpactAnalysis(res.impactAnalysis);
-
-        const s = res.impactAnalysis.summary;
-        const summaryText = `Impact score ${s.totalImpactScore}/10 with ${s.riskLevel} risk. Estimated effort ${s.estimatedEffort}. Confidence ${Math.round(s.confidence * 100)}%.`;
-        setAiSummary(summaryText);
-
-        const prd = generateRefinedPRD(res.impactAnalysis);
-        setRefinedPRD(prd);
-        setOriginalRefinedPRD(prd);
+        setAiSummary(res.impactAnalysis.summary || "No summary available");
+        setRefinedPRD(res.impactAnalysis.refined_prd || "No refined PRD available");
+        setOriginalRefinedPRD(res.impactAnalysis.refined_prd || "");
       } catch (e) {
         console.error("Impact analysis failed", e);
       } finally {

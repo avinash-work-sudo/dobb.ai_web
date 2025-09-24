@@ -12,7 +12,43 @@ export const impactAnalysisAPI = {
     
     // Mock comprehensive impact analysis result
     const mockImpactAnalysis = {
-      summary: {
+      summary: "The User Authentication System is a critical infrastructure component that requires careful implementation across multiple application layers. The analysis reveals significant dependencies on the database layer, API gateway, and frontend components. This feature introduces moderate complexity with high business value and requires coordination between backend and frontend teams.",
+      refined_prd: `# Enhanced User Authentication System
+
+## Overview
+This document outlines the requirements for implementing a comprehensive user authentication system that includes registration, login, password reset, and session management capabilities.
+
+## Features
+1. **User Registration**
+   - Email/username validation
+   - Password strength requirements
+   - Email verification process
+   - Terms of service acceptance
+
+2. **User Login**
+   - Multi-factor authentication support
+   - Remember me functionality
+   - Account lockout after failed attempts
+   - Social login integration (Google, GitHub)
+
+3. **Password Management**
+   - Secure password reset via email
+   - Password history tracking
+   - Password expiration policies
+   - Account recovery options
+
+## Technical Requirements
+- JWT token-based authentication
+- HTTPS encryption for all auth endpoints
+- Rate limiting on authentication attempts
+- Audit logging for security events
+
+## Success Metrics
+- 99.9% authentication uptime
+- < 500ms average response time
+- Zero security incidents
+- 95% user satisfaction score`,
+      impactScore: {
         totalImpactScore: 8.5,
         riskLevel: "Medium",
         estimatedEffort: "3-4 weeks",
