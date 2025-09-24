@@ -50,6 +50,38 @@ export type Database = {
         }
         Relationships: []
       }
+      impact_analysis: {
+        Row: {
+          created_at: string
+          feature_id: string
+          id: string
+          impact_json: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          feature_id: string
+          id?: string
+          impact_json: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          feature_id?: string
+          id?: string
+          impact_json?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "impact_analysis_feature_id_fkey"
+            columns: ["feature_id"]
+            isOneToOne: false
+            referencedRelation: "features"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

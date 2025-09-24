@@ -74,24 +74,39 @@ const Homepage = () => {
         throw new Error('Failed to start impact analysis');
       }
 
-      // Update feature status to indicate analysis started
+      // Save impact analysis result to database
+      const { error: analysisError } = await supabase
+        .from('impact_analysis')
+        .insert({
+          feature_id: feature.id,
+          impact_json: analysisResponse.impactAnalysis
+        });
+
+      if (analysisError) {
+        throw analysisError;
+      }
+
+      // Update feature status to completed
       await supabase
         .from('features')
-        .update({ analysis_started: true })
+        .update({ 
+          status: 'completed',
+          analysis_started: true 
+        })
         .eq('id', feature.id);
 
       toast({
-        title: "Analysis started",
-        description: "Your feature analysis has been started successfully.",
+        title: "Analysis completed",
+        description: "Your feature analysis has been completed successfully.",
       });
 
-      // Navigate to features page
-      navigate('/features');
+      // Navigate to the specific feature detail page
+      navigate(`/feature/${feature.id}`);
     } catch (error) {
       console.error('Analysis error:', error);
       toast({
         title: "Analysis failed",
-        description: "Failed to start analysis. Please try again.",
+        description: "Failed to complete analysis. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -217,7 +232,7 @@ const Homepage = () => {
                   className="bg-gradient-primary text-white hover:opacity-90 transition-all duration-300"
                   disabled={(!fileUrl && !prdLink && !figmaLink && !transcriptLink) || isAnalyzing}
                 >
-                  {isAnalyzing ? "Starting Analysis..." : "Start Analysis"}
+                  {isAnalyzing ? "Processing Feature Analysis..." : "Start Analysis"}
                 </Button>
               </div>
             </CardContent>
