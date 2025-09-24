@@ -33,6 +33,7 @@ import {
   Users,
   Home
 } from "lucide-react";
+import { impactAnalysisAPI } from "@/api/impact-analysis";
 
 const FeatureDetail = () => {
   const { id } = useParams();
@@ -40,6 +41,9 @@ const FeatureDetail = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [showRefineModal, setShowRefineModal] = useState(false);
   const [refinedPRD, setRefinedPRD] = useState("");
+  const [originalRefinedPRD, setOriginalRefinedPRD] = useState("");
+  const [impactAnalysis, setImpactAnalysis] = useState<any | null>(null);
+  const [aiSummary, setAiSummary] = useState("");
 
   // Mock feature data
   const feature = {
@@ -51,52 +55,67 @@ const FeatureDetail = () => {
     sourceType: "PRD",
   };
 
-  // Mock refined PRD content
-  const mockRefinedPRD = `# Enhanced User Authentication System
+  const generateRefinedPRD = (analysis: any) => {
+    const s = analysis?.summary;
+    const modules = analysis?.impactedModules || [];
+    const tech = analysis?.technicalImpacts || [];
+    const gaps = analysis?.identifiedGaps || [];
+    const recs = analysis?.recommendations || [];
+
+    return `# Refined PRD: ${feature.title}
 
 ## Overview
-This document outlines the requirements for implementing a comprehensive user authentication system that includes registration, login, password reset, and session management capabilities.
+This refined PRD is auto-generated from the latest impact analysis.
 
-## Features
-1. **User Registration**
-   - Email/username validation
-   - Password strength requirements
-   - Email verification process
-   - Terms of service acceptance
+## Impact Overview
+- Total Impact Score: ${s?.totalImpactScore ?? "N/A"}/10
+- Risk Level: ${s?.riskLevel ?? "N/A"}
+- Estimated Effort: ${s?.estimatedEffort ?? "N/A"}
+- Confidence: ${s ? Math.round((s.confidence ?? 0) * 100) : "N/A"}%
 
-2. **User Login**
-   - Multi-factor authentication support
-   - Remember me functionality
-   - Account lockout after failed attempts
-   - Social login integration (Google, GitHub)
+## Impacted Modules
+${modules.map((m: any, i: number) => `${i + 1}. ${m.name} — ${m.impact}\n   - ${m.description}`).join("\n") || "- No modules detected"}
 
-3. **Password Management**
-   - Secure password reset via email
-   - Password history tracking
-   - Password expiration policies
-   - Account recovery options
+## Technical Impacts
+${tech.map((t: any) => `- ${t.category} (${t.complexity}): ${t.changes.join(", ")}`).join("\n") || "- No technical changes"}
 
-## Technical Requirements
-- JWT token-based authentication
-- HTTPS encryption for all auth endpoints
-- Rate limiting on authentication attempts
-- Audit logging for security events
+## Identified Gaps
+${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recommendation: ${g.recommendation}`).join("\n") || "- No gaps identified"}
 
-## Success Metrics
-- 99.9% authentication uptime
-- < 500ms average response time
-- Zero security incidents
-- 95% user satisfaction score`;
+## Recommendations
+${recs.map((r: string) => `- ${r}`).join("\n") || "- None"}
+`;
+  };
 
   useEffect(() => {
-    // Simulate loading time
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-      setRefinedPRD(mockRefinedPRD);
-    }, 3000);
+    let isMounted = true;
+    document.title = `${feature.title} - Impact Analysis | DOBB.ai`;
 
-    return () => clearTimeout(timer);
-  }, []);
+    (async () => {
+      try {
+        const res = await impactAnalysisAPI.startAnalysis({
+          featureId: String(id ?? feature.id),
+          fileUrl: ""
+        });
+        if (!isMounted) return;
+        setImpactAnalysis(res.impactAnalysis);
+
+        const s = res.impactAnalysis.summary;
+        const summaryText = `Impact score ${s.totalImpactScore}/10 with ${s.riskLevel} risk. Estimated effort ${s.estimatedEffort}. Confidence ${Math.round(s.confidence * 100)}%.`;
+        setAiSummary(summaryText);
+
+        const prd = generateRefinedPRD(res.impactAnalysis);
+        setRefinedPRD(prd);
+        setOriginalRefinedPRD(prd);
+      } catch (e) {
+        console.error("Impact analysis failed", e);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    })();
+
+    return () => { isMounted = false; };
+  }, [id]);
 
   const handleRefineAccept = () => {
     console.log("Accepting refined PRD:", refinedPRD);
@@ -106,7 +125,7 @@ This document outlines the requirements for implementing a comprehensive user au
 
   const handleRefineCancel = () => {
     setShowRefineModal(false);
-    setRefinedPRD(mockRefinedPRD); // Reset to original
+    setRefinedPRD(originalRefinedPRD); // Reset to original
   };
 
   if (isLoading) {
@@ -294,7 +313,7 @@ This document outlines the requirements for implementing a comprehensive user au
             </CardHeader>
             <CardContent>
               <p className="text-foreground leading-relaxed">
-                The User Authentication System is a critical infrastructure component that requires careful implementation across multiple application layers. The analysis reveals significant dependencies on the database layer, API gateway, and frontend components. This feature introduces moderate complexity with high business value and requires coordination between backend and frontend teams.
+                {aiSummary || "Summary will appear once analysis completes."}
               </p>
             </CardContent>
           </Card>
