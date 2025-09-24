@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   Settings, 
   User, 
@@ -23,82 +24,72 @@ import {
 const Features = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
+  const [features, setFeatures] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Mock data for analyzed features
-  const features = [
-    {
-      id: 1,
-      title: "User Authentication System",
-      description: "Complete user registration, login, and password reset functionality",
-      status: "completed",
-      priority: "high",
-      lastAnalyzed: "2024-01-15",
-      impactScore: 85,
-      sourceType: "PRD",
-      teamSize: 3,
-      estimatedHours: 120,
-    },
-    {
-      id: 2,
-      title: "Real-time Chat Feature",
-      description: "WebSocket-based messaging system with file sharing capabilities",
-      status: "in-progress",
-      priority: "medium",
-      lastAnalyzed: "2024-01-14",
-      impactScore: 72,
-      sourceType: "Figma",
-      teamSize: 2,
-      estimatedHours: 80,
-    },
-    {
-      id: 3,
-      title: "Advanced Search & Filtering",
-      description: "Elasticsearch integration with complex filtering and sorting options",
-      status: "pending",
-      priority: "low",
-      lastAnalyzed: "2024-01-13",
-      impactScore: 45,
-      sourceType: "Meeting Transcript",
-      teamSize: 2,
-      estimatedHours: 60,
-    },
-    {
-      id: 4,
-      title: "Payment Gateway Integration",
-      description: "Stripe integration with subscription management and billing",
-      status: "completed",
-      priority: "high",
-      lastAnalyzed: "2024-01-12",
-      impactScore: 90,
-      sourceType: "PRD",
-      teamSize: 4,
-      estimatedHours: 150,
-    },
-    {
-      id: 5,
-      title: "Mobile App Responsive Design",
-      description: "Complete mobile optimization and progressive web app features",
-      status: "in-progress",
-      priority: "medium",
-      lastAnalyzed: "2024-01-11",
-      impactScore: 65,
-      sourceType: "Figma",
-      teamSize: 3,
-      estimatedHours: 100,
-    },
-    {
-      id: 6,
-      title: "Analytics Dashboard",
-      description: "Comprehensive analytics with charts, reports, and data visualization",
-      status: "pending",
-      priority: "medium",
-      lastAnalyzed: "2024-01-10",
-      impactScore: 55,
-      sourceType: "PRD",
-      teamSize: 2,
-      estimatedHours: 90,
-    },
-  ];
+  useEffect(() => {
+    const fetchFeatures = async () => {
+      try {
+        // Fetch features with their impact analysis
+        const { data: featuresData, error: featuresError } = await supabase
+          .from('features')
+          .select(`
+            id,
+            status,
+            created_at,
+            updated_at,
+            file_url,
+            prd_link,
+            figma_link,
+            transcript_link,
+            analysis_started,
+            impact_analysis (
+              id,
+              impact_json,
+              created_at,
+              updated_at
+            )
+          `);
+
+        if (featuresError) {
+          console.error('Error fetching features:', featuresError);
+          return;
+        }
+
+        // Transform the data to match the expected format
+        const transformedFeatures = featuresData?.map((feature: any) => {
+          const impactData = feature.impact_analysis?.[0]?.impact_json || {};
+          
+          // Determine source type based on available links
+          let sourceType = "PRD";
+          if (feature.figma_link) sourceType = "Figma";
+          else if (feature.transcript_link) sourceType = "Meeting Transcript";
+          else if (feature.file_url) sourceType = "Document";
+
+          return {
+            id: feature.id,
+            title: impactData.title || "Untitled Feature",
+            description: impactData.description || "No description available",
+            status: feature.status || "pending",
+            priority: impactData.priority || "medium",
+            lastAnalyzed: new Date(feature.updated_at).toISOString().split('T')[0],
+            impactScore: impactData.impact_score || 0,
+            sourceType,
+            teamSize: impactData.team_size || 0,
+            estimatedHours: impactData.estimated_hours || 0,
+          };
+        }) || [];
+
+        setFeatures(transformedFeatures);
+      } catch (error) {
+        console.error('Error fetching features:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFeatures();
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -205,8 +196,36 @@ const Features = () => {
         </div>
 
         {/* Features Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredFeatures.map((feature) => (
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <Card key={index} className="bg-surface-elevated border border-border">
+                <CardHeader className="pb-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div className="h-4 w-4 bg-surface-subtle rounded animate-pulse" />
+                      <div className="h-5 w-16 bg-surface-subtle rounded animate-pulse" />
+                    </div>
+                    <div className="flex space-x-2">
+                      <div className="h-5 w-12 bg-surface-subtle rounded animate-pulse" />
+                      <div className="h-5 w-16 bg-surface-subtle rounded animate-pulse" />
+                    </div>
+                  </div>
+                  <div className="h-6 w-3/4 bg-surface-subtle rounded animate-pulse mt-2" />
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="h-4 w-full bg-surface-subtle rounded animate-pulse" />
+                    <div className="h-4 w-2/3 bg-surface-subtle rounded animate-pulse" />
+                    <div className="h-8 w-full bg-surface-subtle rounded animate-pulse" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredFeatures.map((feature) => (
             <Card 
               key={feature.id} 
               className="bg-surface-elevated border border-border hover:shadow-elegant transition-all duration-300 cursor-pointer"
@@ -270,10 +289,11 @@ const Features = () => {
                 </div>
               </CardContent>
             </Card>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
-        {filteredFeatures.length === 0 && (
+        {!loading && filteredFeatures.length === 0 && (
           <div className="text-center py-12">
             <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-foreground mb-2">

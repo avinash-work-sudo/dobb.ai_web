@@ -35,10 +35,12 @@ import {
 } from "lucide-react";
 import { impactAnalysisAPI } from "@/api/impact-analysis";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const FeatureDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [showRefineModal, setShowRefineModal] = useState(false);
   const [refinedPRD, setRefinedPRD] = useState("");
@@ -131,9 +133,24 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
       
       if (error) {
         console.error('Failed to update impact analysis in database:', error);
+        toast({
+          title: "Update Failed",
+          description: "Failed to save PRD changes to database",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "PRD Updated",
+          description: "Your refined PRD has been saved successfully",
+        });
       }
     } catch (error) {
       console.error('Error updating database:', error);
+      toast({
+        title: "Update Failed", 
+        description: "An error occurred while saving changes",
+        variant: "destructive",
+      });
     }
     
     setShowRefineModal(false);
