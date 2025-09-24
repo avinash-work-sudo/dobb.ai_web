@@ -18,7 +18,7 @@ export const oauthProviders: Record<string, OAuthProvider> = {
     id: 'github',
     name: 'GitHub',
     config: {
-      clientId: process.env.GITHUB_CLIENT_ID || '',
+      clientId: import.meta.env.VITE_GITHUB_CLIENT_ID || '',
       redirectUri: `${window.location.origin}/auth/callback/github`,
       scope: 'repo,read:user,user:email,read:org',
       authUrl: 'https://github.com/login/oauth/authorize'
@@ -28,7 +28,7 @@ export const oauthProviders: Record<string, OAuthProvider> = {
     id: 'figma',
     name: 'Figma',
     config: {
-      clientId: process.env.FIGMA_CLIENT_ID || '',
+      clientId: import.meta.env.VITE_FIGMA_CLIENT_ID || '',
       redirectUri: `${window.location.origin}/auth/callback/figma`,
       scope: 'file_read',
       authUrl: 'https://www.figma.com/oauth'
@@ -38,7 +38,7 @@ export const oauthProviders: Record<string, OAuthProvider> = {
     id: 'atlassian',
     name: 'Atlassian',
     config: {
-      clientId: process.env.ATLASSIAN_CLIENT_ID || '',
+      clientId: import.meta.env.VITE_ATLASSIAN_CLIENT_ID || '',
       redirectUri: `${window.location.origin}/auth/callback/atlassian`,
       scope: 'read:jira-work read:jira-user offline_access read:confluence-content.summary',
       authUrl: 'https://auth.atlassian.com/authorize'
