@@ -42,28 +42,20 @@ const FeatureDetail = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
+  const [isReanalyzing, setIsReanalyzing] = useState(false);
   const [showRefineModal, setShowRefineModal] = useState(false);
   const [refinedPRD, setRefinedPRD] = useState("");
   const [originalRefinedPRD, setOriginalRefinedPRD] = useState("");
   const [impactAnalysis, setImpactAnalysis] = useState<any | null>(null);
+  const [feature, setFeature] = useState<any | null>(null);
   const [aiSummary, setAiSummary] = useState("");
 
-  // Mock feature data
-  const feature = {
-    id: 1,
-    title: "User Authentication System",
-    description: "Complete user registration, login, and password reset functionality",
-    status: "completed",
-    priority: "high",
-    sourceType: "PRD",
-  };
-
   const generateRefinedPRD = (analysis: any) => {
-    const s = analysis?.summary;
+    const s = analysis?.summary || analysis?.impactScore;
     const modules = analysis?.impactedModules || [];
     const tech = analysis?.technicalImpacts || [];
     const gaps = analysis?.identifiedGaps || [];
-    return `# Refined PRD: ${feature.title}
+    return `# Refined PRD: ${feature?.title || 'Feature'}
 
 ## Overview
 This refined PRD is auto-generated from the latest impact analysis.
@@ -85,30 +77,124 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
 `;
   };
 
+  // Fetch feature and impact analysis data from Supabase
   useEffect(() => {
     let isMounted = true;
-    document.title = `${feature.title} - Impact Analysis | DOBB.ai`;
 
-    (async () => {
+    const fetchFeatureData = async () => {
+      if (!id) return;
+
       try {
-        const res = await impactAnalysisAPI.startAnalysis({
-          featureId: String(id ?? feature.id),
-          fileUrl: ""
-        });
+        // Fetch feature with impact analysis
+        const { data: featureData, error: featureError } = await supabase
+          .from('features')
+          .select(`
+            id,
+            status,
+            created_at,
+            updated_at,
+            file_url,
+            prd_link,
+            figma_link,
+            transcript_link,
+            analysis_started,
+            impact_analysis (
+              id,
+              impact_json,
+              created_at,
+              updated_at
+            )
+          `)
+          .eq('id', id)
+          .single();
+
+        if (featureError) {
+          console.error('Error fetching feature:', featureError);
+          navigate('/features');
+          return;
+        }
+
         if (!isMounted) return;
-        setImpactAnalysis(res.impactAnalysis);
-        setAiSummary(res.impactAnalysis.summary || "No summary available");
-        setRefinedPRD(res.impactAnalysis.refined_prd || "No refined PRD available");
-        setOriginalRefinedPRD(res.impactAnalysis.refined_prd || "");
-      } catch (e) {
-        console.error("Impact analysis failed", e);
+
+        // Determine source type based on available links
+        let sourceType = "PRD";
+        if (featureData.figma_link) sourceType = "Figma";
+        else if (featureData.transcript_link) sourceType = "Meeting Transcript";
+        else if (featureData.file_url) sourceType = "Document";
+
+        const transformedFeature = {
+          id: featureData.id,
+          title: (featureData.impact_analysis?.[0]?.impact_json as any)?.title || `Feature ${featureData.id.slice(0, 8)}`,
+          description: (featureData.impact_analysis?.[0]?.impact_json as any)?.summary || "Feature analysis",
+          status: featureData.status,
+          priority: "medium", // You can derive this from impact analysis if needed
+          sourceType,
+        };
+
+        setFeature(transformedFeature);
+        document.title = `${transformedFeature.title} - Impact Analysis | DOBB.ai`;
+
+        // If impact analysis exists, set it up
+        if (featureData.impact_analysis?.[0]) {
+          const analysisData = featureData.impact_analysis[0].impact_json as any;
+          setImpactAnalysis(analysisData);
+          
+          // Handle different summary formats
+          let summary = "";
+          if (typeof analysisData.summary === 'string') {
+            summary = analysisData.summary;
+          } else if (analysisData.summary) {
+            summary = "Impact analysis completed with detailed breakdown available.";
+          }
+          setAiSummary(summary || "Analysis completed.");
+
+          // Set refined PRD
+          const existingRefinedPRD = analysisData.refined_prd || generateRefinedPRD(analysisData);
+          setRefinedPRD(existingRefinedPRD);
+          setOriginalRefinedPRD(existingRefinedPRD);
+        }
+
+      } catch (error) {
+        console.error('Error fetching feature data:', error);
+        if (isMounted) navigate('/features');
       } finally {
         if (isMounted) setIsLoading(false);
       }
-    })();
+    };
 
+    fetchFeatureData();
     return () => { isMounted = false; };
-  }, [id]);
+  }, [id, navigate]);
+
+  const handleReanalyze = async () => {
+    setIsReanalyzing(true);
+    try {
+      // Trigger re-analysis
+      const res = await impactAnalysisAPI.startAnalysis({
+        featureId: String(id),
+        fileUrl: feature?.file_url || ""
+      });
+      
+      setImpactAnalysis(res.impactAnalysis);
+      setAiSummary(res.impactAnalysis.summary || "Re-analysis completed");
+      setRefinedPRD(res.impactAnalysis.refined_prd || generateRefinedPRD(res.impactAnalysis));
+      setOriginalRefinedPRD(res.impactAnalysis.refined_prd || "");
+      
+      toast({
+        title: "Re-analysis Complete",
+        description: "Feature has been re-analyzed successfully",
+      });
+    } catch (error) {
+      console.error("Re-analysis failed", error);
+      toast({
+        title: "Re-analysis Failed",
+        description: "Failed to re-analyze the feature",
+        variant: "destructive",
+      });
+    } finally {
+      setIsReanalyzing(false);
+    }
+  };
 
   const handleRefineAccept = async () => {
     console.log("Accepting refined PRD:", refinedPRD);
@@ -161,6 +247,7 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
     setRefinedPRD(originalRefinedPRD); // Reset to original
   };
 
+  // Show loading only when initially fetching data
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -195,58 +282,59 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
           </div>
         </header>
 
-        {/* Loading Content */}
         <main className="container mx-auto px-6 py-8">
           <div className="max-w-4xl mx-auto">
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-foreground mb-2">
-                {feature.title}
-              </h1>
-              <p className="text-lg text-muted-foreground">
-                Analyzing feature impact and generating comprehensive report...
-              </p>
-            </div>
-
             <Card className="bg-surface-elevated border border-border">
               <CardContent className="pt-6">
                 <div className="text-center py-12">
-                  <div className="relative mb-6">
-                    <Loader2 className="h-16 w-16 text-primary mx-auto animate-spin" />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-20 h-20 border-4 border-primary/20 rounded-full"></div>
-                    </div>
-                  </div>
-                  
+                  <Loader2 className="h-16 w-16 text-primary mx-auto animate-spin mb-6" />
                   <h3 className="text-xl font-semibold text-foreground mb-4">
-                    Processing Feature Analysis
+                    Loading Feature Data
                   </h3>
-                  
-                  <div className="max-w-md mx-auto space-y-4">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Extracting requirements</span>
-                      <CheckCircle2 className="h-4 w-4 text-green-500" />
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Analyzing dependencies</span>
-                      <Loader2 className="h-4 w-4 text-primary animate-spin" />
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Identifying risks</span>
-                      <div className="w-4 h-4 rounded-full bg-muted"></div>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Generating report</span>
-                      <div className="w-4 h-4 rounded-full bg-muted"></div>
-                    </div>
-                  </div>
-                  
-                  <Progress value={65} className="mt-6 max-w-md mx-auto" />
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Estimated time remaining: 2 minutes
+                  <p className="text-muted-foreground">
+                    Fetching feature details and analysis results...
                   </p>
                 </div>
               </CardContent>
             </Card>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Show message if no feature found
+  if (!feature) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="border-b border-border bg-surface-elevated">
+          <div className="container mx-auto px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => navigate('/features')}
+                  className="hover:bg-surface-subtle"
+                >
+                  <ArrowLeft className="h-5 w-5 text-muted-foreground" />
+                </Button>
+                <div className="bg-gradient-primary p-2 rounded-lg shadow-elegant">
+                  <BarChart3 className="h-6 w-6 text-white" />
+                </div>
+                <h1 className="text-xl font-bold text-foreground">DOBB.ai</h1>
+              </div>
+            </div>
+          </div>
+        </header>
+        
+        <main className="container mx-auto px-6 py-8">
+          <div className="max-w-4xl mx-auto text-center">
+            <h1 className="text-2xl font-bold text-foreground mb-4">Feature Not Found</h1>
+            <p className="text-muted-foreground mb-6">The requested feature could not be found.</p>
+            <Button onClick={() => navigate('/features')}>
+              Back to Features
+            </Button>
           </div>
         </main>
       </div>
@@ -525,15 +613,31 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
               onClick={() => setShowRefineModal(true)}
               className="bg-gradient-primary text-white hover:opacity-90 transition-all duration-300"
               size="lg"
+              disabled={isReanalyzing}
             >
               <RefreshCw className="h-4 w-4 mr-2" />
               Refine PRD
+            </Button>
+            <Button 
+              onClick={handleReanalyze}
+              variant="outline"
+              className="border-yellow-500 text-yellow-400 hover:bg-yellow-500 hover:text-white transition-all duration-300"
+              size="lg"
+              disabled={isReanalyzing}
+            >
+              {isReanalyzing ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
+              {isReanalyzing ? "Re-analyzing..." : "Re-analyze Feature"}
             </Button>
             <Button 
               onClick={() => navigate(`/feature/${id}/stories`)}
               variant="outline"
               className="border-primary text-primary hover:bg-primary hover:text-white transition-all duration-300"
               size="lg"
+              disabled={isReanalyzing}
             >
               <Users className="h-4 w-4 mr-2" />
               Generate User Stories
