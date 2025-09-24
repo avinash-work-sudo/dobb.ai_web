@@ -43,7 +43,10 @@ const Stories = () => {
   const [selectedStories, setSelectedStories] = useState<number[]>([]);
   const [showJiraModal, setShowJiraModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showTestCaseModal, setShowTestCaseModal] = useState(false);
   const [editingStory, setEditingStory] = useState<any>(null);
+  const [editingTestCase, setEditingTestCase] = useState<any>(null);
+  const [testCases, setTestCases] = useState<any[]>([]);
   const [jiraWebhookUrl, setJiraWebhookUrl] = useState("");
   const [isImporting, setIsImporting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -130,6 +133,7 @@ const Stories = () => {
         });
 
         setUserStories(transformedStories);
+        setTestCases(testCasesData); // Store test cases for editing
 
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -288,6 +292,70 @@ const Stories = () => {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  // Test Case Management Functions
+  const handleEditTestCase = (testCase: any) => {
+    setEditingTestCase(testCase);
+    setShowTestCaseModal(true);
+  };
+
+  const handleSaveTestCase = async () => {
+    if (!editingTestCase) return;
+    
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('test_cases')
+        .update({
+          name: editingTestCase.name?.trim(),
+          description: editingTestCase.description?.trim(),
+          steps: editingTestCase.steps || [],
+          expected_result: editingTestCase.expected_result?.trim(),
+          priority: editingTestCase.priority,
+          status: editingTestCase.status,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', editingTestCase.id);
+
+      if (error) {
+        console.error('Error updating test case:', error);
+        toast({
+          title: "Update Failed",
+          description: "Failed to update test case",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Update local state
+      setTestCases(testCases.map(tc => 
+        tc.id === editingTestCase.id ? editingTestCase : tc
+      ));
+
+      toast({
+        title: "Test Case Updated",
+        description: "Test case has been updated successfully",
+      });
+
+      setShowTestCaseModal(false);
+      setEditingTestCase(null);
+
+    } catch (error) {
+      console.error('Error saving test case:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save test case",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancelTestCaseEdit = () => {
+    setShowTestCaseModal(false);
+    setEditingTestCase(null);
   };
 
   const handleCancelEdit = () => {
@@ -850,6 +918,190 @@ const Stories = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Test Case Edit Modal */}
+      <Dialog open={showTestCaseModal} onOpenChange={setShowTestCaseModal}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto bg-surface-elevated border border-border">
+          <DialogHeader>
+            <DialogTitle>Edit Test Case</DialogTitle>
+            <DialogDescription>
+              Update the details of this test case.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {editingTestCase && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="testcase-name">Name</Label>
+                <Input
+                  id="testcase-name"
+                  value={editingTestCase.name || ""}
+                  onChange={(e) => setEditingTestCase({...editingTestCase, name: e.target.value})}
+                  className="bg-surface-subtle border-border"
+                  maxLength={200}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="testcase-description">Description</Label>
+                <Textarea
+                  id="testcase-description"
+                  value={editingTestCase.description || ""}
+                  onChange={(e) => setEditingTestCase({...editingTestCase, description: e.target.value})}
+                  className="bg-surface-subtle border-border min-h-[80px]"
+                  maxLength={1000}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="testcase-expected">Expected Result</Label>
+                <Textarea
+                  id="testcase-expected"
+                  value={editingTestCase.expected_result || ""}
+                  onChange={(e) => setEditingTestCase({...editingTestCase, expected_result: e.target.value})}
+                  className="bg-surface-subtle border-border min-h-[60px]"
+                  maxLength={500}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="testcase-priority">Priority</Label>
+                  <select
+                    id="testcase-priority"
+                    value={editingTestCase.priority || "medium"}
+                    onChange={(e) => setEditingTestCase({...editingTestCase, priority: e.target.value})}
+                    className="w-full px-3 py-2 text-sm rounded-md border border-border bg-surface-subtle text-foreground"
+                  >
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                  </select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="testcase-status">Status</Label>
+                  <select
+                    id="testcase-status"
+                    value={editingTestCase.status || "not_executed"}
+                    onChange={(e) => setEditingTestCase({...editingTestCase, status: e.target.value})}
+                    className="w-full px-3 py-2 text-sm rounded-md border border-border bg-surface-subtle text-foreground"
+                  >
+                    <option value="not_executed">Not Executed</option>
+                    <option value="passed">Passed</option>
+                    <option value="failed">Failed</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Test Steps</Label>
+                <div className="space-y-2">
+                  {(editingTestCase.steps || []).map((step: string, index: number) => (
+                    <div key={index} className="flex gap-2">
+                      <Input
+                        value={step}
+                        onChange={(e) => {
+                          const newSteps = [...(editingTestCase.steps || [])];
+                          newSteps[index] = e.target.value;
+                          setEditingTestCase({...editingTestCase, steps: newSteps});
+                        }}
+                        className="bg-surface-subtle border-border"
+                        placeholder={`Step ${index + 1}`}
+                        maxLength={200}
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const newSteps = (editingTestCase.steps || []).filter((_: any, i: number) => i !== index);
+                          setEditingTestCase({...editingTestCase, steps: newSteps});
+                        }}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setEditingTestCase({
+                        ...editingTestCase,
+                        steps: [...(editingTestCase.steps || []), ""]
+                      });
+                    }}
+                  >
+                    Add Step
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={handleCancelTestCaseEdit}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSaveTestCase}
+              disabled={isSaving}
+              className="bg-gradient-primary text-white hover:opacity-90"
+            >
+              {isSaving ? (
+                <>
+                  <div className="animate-spin h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full" />
+                  Saving...
+                </>
+              ) : (
+                "Save Changes"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Test Cases Section */}
+      {testCases.length > 0 && (
+        <Card className="bg-surface-elevated border border-border mt-8">
+          <CardHeader>
+            <CardTitle className="text-xl text-foreground">Test Cases</CardTitle>
+            <CardDescription>Manage test cases for user stories</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {testCases.map((testCase) => (
+                <div key={testCase.id} className="border border-border rounded-lg p-4 bg-surface-subtle">
+                  <div className="flex justify-between items-start mb-2">
+                    <h4 className="font-medium text-foreground">{testCase.name}</h4>
+                    <div className="flex gap-2">
+                      <Badge variant={
+                        testCase.status === 'passed' ? 'default' : 
+                        testCase.status === 'failed' ? 'destructive' : 
+                        'secondary'
+                      }>
+                        {testCase.status.replace('_', ' ')}
+                      </Badge>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditTestCase(testCase)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-2">{testCase.description}</p>
+                  <div className="flex gap-4 text-xs text-muted-foreground">
+                    <span>Priority: {testCase.priority}</span>
+                    <span>Steps: {testCase.steps?.length || 0}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
