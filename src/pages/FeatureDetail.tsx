@@ -43,6 +43,7 @@ const FeatureDetail = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [isReanalyzing, setIsReanalyzing] = useState(false);
+  const [isGeneratingStories, setIsGeneratingStories] = useState(false);
   const [showRefineModal, setShowRefineModal] = useState(false);
   const [refinedPRD, setRefinedPRD] = useState("");
   const [originalRefinedPRD, setOriginalRefinedPRD] = useState("");
@@ -245,6 +246,118 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
   const handleRefineCancel = () => {
     setShowRefineModal(false);
     setRefinedPRD(originalRefinedPRD); // Reset to original
+  };
+
+  const handleGenerateUserStories = async () => {
+    setIsGeneratingStories(true);
+    try {
+      // TODO: Replace this with actual API call to generate user stories
+      // For now, using dummy data
+      const dummyUserStories = [
+        {
+          title: "User Registration with Email Verification",
+          description: "As a new user, I want to register with my email address and receive a verification email so that I can create a secure account.",
+          acceptance_criteria: [
+            "User can enter email and password",
+            "Verification email is sent within 30 seconds",
+            "User can click verification link to activate account",
+            "Invalid email formats are rejected with clear error messages"
+          ],
+          priority: "high",
+          estimated_hours: 8,
+          status: "draft",
+          test_cases: [
+            "Test valid email registration flow",
+            "Test invalid email format handling",
+            "Test verification email delivery",
+            "Test account activation process"
+          ]
+        },
+        {
+          title: "OAuth Integration for Social Login",
+          description: "As a user, I want to login using my Google or GitHub account so that I can access the platform quickly without creating a new password.",
+          acceptance_criteria: [
+            "Google OAuth integration works correctly",
+            "GitHub OAuth integration works correctly",
+            "User profile data is synced from OAuth provider",
+            "Account linking works for existing users"
+          ],
+          priority: "medium",
+          estimated_hours: 12,
+          status: "draft",
+          test_cases: [
+            "Test Google OAuth flow",
+            "Test GitHub OAuth flow",
+            "Test profile data synchronization",
+            "Test account linking scenarios"
+          ]
+        },
+        {
+          title: "User Profile Management",
+          description: "As a registered user, I want to update my profile information including name, avatar, and preferences so that I can personalize my experience.",
+          acceptance_criteria: [
+            "User can update display name",
+            "User can upload and crop avatar image",
+            "User can set email preferences",
+            "Changes are saved and reflected immediately"
+          ],
+          priority: "low",
+          estimated_hours: 6,
+          status: "draft",
+          test_cases: [
+            "Test profile information updates",
+            "Test avatar upload and cropping",
+            "Test preference settings",
+            "Test data persistence"
+          ]
+        }
+      ];
+
+      // Store user stories in Supabase
+      const userStoriesToInsert = dummyUserStories.map(story => ({
+        feature_id: id,
+        title: story.title,
+        description: story.description,
+        acceptance_criteria: story.acceptance_criteria,
+        priority: story.priority,
+        estimated_hours: story.estimated_hours,
+        status: story.status,
+        test_cases: story.test_cases
+      }));
+
+      const { data, error } = await supabase
+        .from('user_stories')
+        .insert(userStoriesToInsert)
+        .select();
+
+      if (error) {
+        console.error('Error storing user stories:', error);
+        toast({
+          title: "Generation Failed",
+          description: "Failed to store user stories in database",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "User Stories Generated",
+        description: `Successfully generated ${dummyUserStories.length} user stories`,
+      });
+
+      // Navigate to stories page
+      navigate(`/feature/${id}/stories`);
+
+    } catch (error) {
+      console.error("Failed to generate user stories:", error);
+      toast({
+        title: "Generation Failed",
+        description: "Failed to generate user stories",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingStories(false);
+    }
   };
 
   // Show loading only when initially fetching data
@@ -633,14 +746,18 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
               {isReanalyzing ? "Re-analyzing..." : "Re-analyze Feature"}
             </Button>
             <Button 
-              onClick={() => navigate(`/feature/${id}/stories`)}
+              onClick={handleGenerateUserStories}
               variant="outline"
               className="border-primary text-primary hover:bg-primary hover:text-white transition-all duration-300"
               size="lg"
-              disabled={isReanalyzing}
+              disabled={isReanalyzing || isGeneratingStories}
             >
-              <Users className="h-4 w-4 mr-2" />
-              Generate User Stories
+              {isGeneratingStories ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Users className="h-4 w-4 mr-2" />
+              )}
+              {isGeneratingStories ? "Generating..." : "Generate User Stories"}
             </Button>
           </div>
         </div>

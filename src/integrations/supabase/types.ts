@@ -82,6 +82,56 @@ export type Database = {
           },
         ]
       }
+      user_stories: {
+        Row: {
+          acceptance_criteria: string[] | null
+          created_at: string
+          description: string | null
+          estimated_hours: number | null
+          feature_id: string
+          id: string
+          priority: string | null
+          status: string | null
+          test_cases: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          acceptance_criteria?: string[] | null
+          created_at?: string
+          description?: string | null
+          estimated_hours?: number | null
+          feature_id: string
+          id?: string
+          priority?: string | null
+          status?: string | null
+          test_cases?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          acceptance_criteria?: string[] | null
+          created_at?: string
+          description?: string | null
+          estimated_hours?: number | null
+          feature_id?: string
+          id?: string
+          priority?: string | null
+          status?: string | null
+          test_cases?: string[] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_stories_feature_id_fkey"
+            columns: ["feature_id"]
+            isOneToOne: false
+            referencedRelation: "features"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
