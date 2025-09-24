@@ -698,7 +698,7 @@ const Stories = () => {
 
       {/* Edit Story Modal */}
       <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-        <DialogContent className="max-w-2xl bg-surface-elevated border border-border">
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto bg-surface-elevated border border-border">
           <DialogHeader>
             <DialogTitle>Edit User Story</DialogTitle>
             <DialogDescription>
