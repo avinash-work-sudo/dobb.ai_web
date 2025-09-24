@@ -109,8 +109,13 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
 
   const handleRefineAccept = () => {
     console.log("Accepting refined PRD:", refinedPRD);
+    // Update the impact analysis refined_prd attribute
+    setImpactAnalysis((prev: any) => ({
+      ...prev,
+      refined_prd: refinedPRD
+    }));
+    setOriginalRefinedPRD(refinedPRD); // Update the original so cancel works correctly
     setShowRefineModal(false);
-    // Here you would save the refined PRD
   };
 
   const handleRefineCancel = () => {
