@@ -133,7 +133,12 @@ const ChatBot = () => {
             isMinimized ? 'w-80 h-16' : 'w-full h-[calc(100vh-2rem)] md:w-96 md:h-[500px]'
           }`}
         >
-        <CardHeader className="flex flex-row items-center justify-between p-4 border-b border-border">
+        <CardHeader 
+          className={`flex flex-row items-center justify-between p-4 border-b border-border ${
+            isMinimized ? 'cursor-pointer hover:bg-surface-subtle/50 transition-colors' : ''
+          }`}
+          onClick={isMinimized ? () => setIsMinimized(false) : undefined}
+        >
           <div className="flex items-center space-x-3">
             <div className="relative">
               <Avatar className="h-8 w-8">
@@ -143,20 +148,30 @@ const ChatBot = () => {
               </Avatar>
               <div className="absolute -bottom-1 -right-1 h-3 w-3 bg-green-500 rounded-full border-2 border-surface-elevated" />
             </div>
-            <div>
+            <div className={isMinimized ? 'hidden' : 'block'}>
               <CardTitle className="text-sm font-semibold text-foreground">DOBB Assistant</CardTitle>
               <p className="text-xs text-muted-foreground">Online • Typically replies instantly</p>
             </div>
+            {isMinimized && (
+              <div className="flex items-center space-x-2">
+                <CardTitle className="text-sm font-semibold text-foreground">DOBB Assistant</CardTitle>
+                <Badge variant="secondary" className="text-xs">
+                  {messages.length > 1 ? `${messages.length - 1} messages` : 'Online'}
+                </Badge>
+              </div>
+            )}
           </div>
           <div className="flex items-center space-x-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={minimizeChat}
-              className="h-8 w-8 p-0 hover:bg-surface-subtle"
-            >
-              <Minimize2 className="h-4 w-4" />
-            </Button>
+            {!isMinimized && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={minimizeChat}
+                className="h-8 w-8 p-0 hover:bg-surface-subtle"
+              >
+                <Minimize2 className="h-4 w-4" />
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="sm"
