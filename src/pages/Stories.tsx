@@ -234,6 +234,8 @@ const Stories = () => {
     setShowEditModal(false);
     setEditingStory(null);
   };
+
+  const handleJiraImport = async () => {
     if (!jiraWebhookUrl) {
       toast({
         title: "Error",
@@ -269,7 +271,7 @@ const Stories = () => {
           timestamp: new Date().toISOString(),
           triggered_from: window.location.origin,
           stories: selectedStoriesData,
-          feature_name: "User Authentication System",
+          feature_name: featureTitle,
           total_stories: selectedStoriesData.length
         }),
       });
@@ -620,17 +622,20 @@ const Stories = () => {
               </p>
             </div>
 
-            <div className="bg-surface-subtle rounded-lg p-4">
-              <h4 className="text-sm font-medium text-foreground mb-2">Stories to Import:</h4>
-              <div className="space-y-1 max-h-32 overflow-y-auto">
-                {userStories
-                  .filter(story => selectedStories.includes(story.id))
-                  .map((story) => (
-                    <div key={story.id} className="flex items-center space-x-2 text-xs">
-                      <CheckCircle2 className="h-3 w-3 text-green-500" />
-                      <span className="text-foreground">{story.title}</span>
+            <div className="border border-border rounded-lg p-4 bg-surface-subtle">
+              <h4 className="font-medium text-foreground mb-3">Selected Stories ({selectedStories.length})</h4>
+              <div className="space-y-2 max-h-32 overflow-y-auto">
+                {selectedStories.map(storyId => {
+                  const story = userStories.find(s => s.id === storyId);
+                  return story ? (
+                    <div key={storyId} className="flex items-center justify-between text-sm">
+                      <span className="text-foreground truncate">{story.title}</span>
+                      <Badge className={`text-xs border ml-2 ${getPriorityColor(story.priority)}`}>
+                        {story.priority}
+                      </Badge>
                     </div>
-                  ))}
+                  ) : null;
+                })}
               </div>
             </div>
           </div>
