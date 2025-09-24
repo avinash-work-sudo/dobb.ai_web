@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { impactAnalysisAPI } from "@/api/impact-analysis";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -60,22 +61,16 @@ const Homepage = () => {
         throw featureError;
       }
 
-      // Start impact analysis (dummy API call)
-      const response = await fetch('/api/impact-analysis/start', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          featureId: feature.id,
-          fileUrl: fileUrl,
-          prdLink: prdLink,
-          figmaLink: figmaLink,
-          transcriptLink: transcriptLink
-        })
+      // Start impact analysis using mock API
+      const analysisResponse = await impactAnalysisAPI.startAnalysis({
+        featureId: feature.id,
+        fileUrl: fileUrl,
+        prdLink: prdLink,
+        figmaLink: figmaLink,
+        transcriptLink: transcriptLink
       });
 
-      if (!response.ok) {
+      if (!analysisResponse.success) {
         throw new Error('Failed to start impact analysis');
       }
 
