@@ -82,6 +82,53 @@ export type Database = {
           },
         ]
       }
+      test_cases: {
+        Row: {
+          created_at: string
+          description: string | null
+          expected_result: string | null
+          id: string
+          name: string
+          priority: string | null
+          status: string
+          steps: string[] | null
+          updated_at: string
+          user_story_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          expected_result?: string | null
+          id?: string
+          name: string
+          priority?: string | null
+          status?: string
+          steps?: string[] | null
+          updated_at?: string
+          user_story_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          expected_result?: string | null
+          id?: string
+          name?: string
+          priority?: string | null
+          status?: string
+          steps?: string[] | null
+          updated_at?: string
+          user_story_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_test_cases_user_story"
+            columns: ["user_story_id"]
+            isOneToOne: false
+            referencedRelation: "user_stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_stories: {
         Row: {
           acceptance_criteria: string[] | null
@@ -92,7 +139,6 @@ export type Database = {
           id: string
           priority: string | null
           status: string | null
-          test_cases: string[] | null
           title: string
           updated_at: string
         }
@@ -105,7 +151,6 @@ export type Database = {
           id?: string
           priority?: string | null
           status?: string | null
-          test_cases?: string[] | null
           title: string
           updated_at?: string
         }
@@ -118,7 +163,6 @@ export type Database = {
           id?: string
           priority?: string | null
           status?: string | null
-          test_cases?: string[] | null
           title?: string
           updated_at?: string
         }

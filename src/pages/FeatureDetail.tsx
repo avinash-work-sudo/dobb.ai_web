@@ -292,10 +292,34 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
           estimated_hours: 8,
           status: "draft",
           test_cases: [
-            "Test valid email registration flow",
-            "Test invalid email format handling",
-            "Test verification email delivery",
-            "Test account activation process"
+            {
+              name: "Successful User Registration with Valid Email",
+              description: "Verify that a user can successfully register with a valid email address and strong password",
+              steps: [
+                "Navigate to registration page",
+                "Enter valid email address (test@example.com)",
+                "Enter strong password (minimum 8 characters, uppercase, lowercase, number, symbol)",
+                "Confirm password matches",
+                "Click 'Register' button",
+                "Verify success message is displayed",
+                "Check that verification email is sent"
+              ],
+              expected_result: "User account is created and verification email is sent",
+              priority: "high"
+            },
+            {
+              name: "Registration Fails with Invalid Email Format",
+              description: "Verify that registration fails when user enters invalid email format",
+              steps: [
+                "Navigate to registration page",
+                "Enter invalid email format (test@invalid)",
+                "Enter valid password",
+                "Click 'Register' button",
+                "Verify error message is displayed"
+              ],
+              expected_result: "Registration fails with appropriate error message",
+              priority: "high"
+            }
           ]
         },
         {
@@ -311,10 +335,30 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
           estimated_hours: 12,
           status: "draft",
           test_cases: [
-            "Test Google OAuth flow",
-            "Test GitHub OAuth flow",
-            "Test profile data synchronization",
-            "Test account linking scenarios"
+            {
+              name: "Google OAuth Integration Test",
+              description: "Test the Google OAuth login flow",
+              steps: [
+                "Click 'Login with Google' button",
+                "Verify Google OAuth popup opens",
+                "Complete Google authentication",
+                "Verify user is logged in with Google profile"
+              ],
+              expected_result: "User successfully logs in using Google OAuth",
+              priority: "high"
+            },
+            {
+              name: "GitHub OAuth Integration Test", 
+              description: "Test the GitHub OAuth login flow",
+              steps: [
+                "Click 'Login with GitHub' button",
+                "Verify GitHub OAuth popup opens",
+                "Complete GitHub authentication",
+                "Verify user is logged in with GitHub profile"
+              ],
+              expected_result: "User successfully logs in using GitHub OAuth",
+              priority: "medium"
+            }
           ]
         },
         {
@@ -330,15 +374,23 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
           estimated_hours: 6,
           status: "draft",
           test_cases: [
-            "Test profile information updates",
-            "Test avatar upload and cropping",
-            "Test preference settings",
-            "Test data persistence"
+            {
+              name: "Profile Information Update Test",
+              description: "Test updating user profile information",
+              steps: [
+                "Navigate to profile settings",
+                "Update display name",
+                "Save changes",
+                "Verify changes are reflected"
+              ],
+              expected_result: "Profile information is successfully updated",
+              priority: "medium"
+            }
           ]
         }
       ];
 
-      // Store user stories in Supabase
+      // Store user stories in Supabase (without test_cases)
       const userStoriesToInsert = dummyUserStories.map(story => ({
         feature_id: id,
         title: story.title,
@@ -346,11 +398,10 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
         acceptance_criteria: story.acceptance_criteria,
         priority: story.priority,
         estimated_hours: story.estimated_hours,
-        status: story.status,
-        test_cases: story.test_cases
+        status: story.status
       }));
 
-      const { data, error } = await supabase
+      const { data: insertedStories, error } = await supabase
         .from('user_stories')
         .insert(userStoriesToInsert)
         .select();
@@ -365,9 +416,44 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
         return;
       }
 
+      // Now insert test cases for each user story
+      const testCasesToInsert = [];
+      for (let i = 0; i < dummyUserStories.length; i++) {
+        const story = dummyUserStories[i];
+        const insertedStory = insertedStories[i];
+        
+        for (const testCase of story.test_cases) {
+          testCasesToInsert.push({
+            user_story_id: insertedStory.id,
+            name: testCase.name,
+            description: testCase.description,
+            steps: testCase.steps,
+            expected_result: testCase.expected_result,
+            priority: testCase.priority,
+            status: 'not_executed'
+          });
+        }
+      }
+
+      if (testCasesToInsert.length > 0) {
+        const { error: testCaseError } = await supabase
+          .from('test_cases')
+          .insert(testCasesToInsert);
+
+        if (testCaseError) {
+          console.error('Error storing test cases:', testCaseError);
+          // Don't fail the whole operation for test case errors
+          toast({
+            title: "Warning",
+            description: "User stories created but some test cases failed to save",
+            variant: "default",
+          });
+        }
+      }
+
       toast({
         title: "User Stories Generated",
-        description: `Successfully generated ${dummyUserStories.length} user stories`,
+        description: `Successfully generated ${dummyUserStories.length} user stories with test cases`,
       });
 
       // Navigate to stories page

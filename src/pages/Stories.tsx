@@ -76,6 +76,23 @@ const Stories = () => {
           return;
         }
 
+        // Fetch test cases for all user stories
+        const storyIds = storiesData.map(story => story.id);
+        let testCasesData = [];
+        
+        if (storyIds.length > 0) {
+          const { data: testCases, error: testCasesError } = await supabase
+            .from('test_cases')
+            .select('*')
+            .in('user_story_id', storyIds);
+
+          if (testCasesError) {
+            console.error('Error fetching test cases:', testCasesError);
+          } else {
+            testCasesData = testCases || [];
+          }
+        }
+
         // Also fetch feature info for the title
         const { data: featureData, error: featureError } = await supabase
           .from('features')
@@ -95,18 +112,22 @@ const Stories = () => {
 
         if (!isMounted) return;
 
-        // Transform the data for the UI
-        const transformedStories = storiesData.map((story, index) => ({
-          id: index + 1, // Use index for UI IDs
-          dbId: story.id, // Keep original DB ID
-          title: story.title,
-          description: story.description,
-          testCases: story.test_cases?.length || 0,
-          priority: story.priority?.charAt(0).toUpperCase() + story.priority?.slice(1) || "Medium",
-          estimatedHours: story.estimated_hours || 0,
-          acceptanceCriteria: story.acceptance_criteria?.length || 0,
-          status: story.status,
-        }));
+        // Transform the data for the UI, counting test cases per story
+        const transformedStories = storiesData.map((story, index) => {
+          const storyTestCases = testCasesData.filter(tc => tc.user_story_id === story.id);
+          
+          return {
+            id: index + 1, // Use index for UI IDs
+            dbId: story.id, // Keep original DB ID
+            title: story.title,
+            description: story.description,
+            testCases: storyTestCases.length, // Count of test cases
+            priority: story.priority?.charAt(0).toUpperCase() + story.priority?.slice(1) || "Medium",
+            estimatedHours: story.estimated_hours || 0,
+            acceptanceCriteria: story.acceptance_criteria?.length || 0,
+            status: story.status,
+          };
+        });
 
         setUserStories(transformedStories);
 
@@ -146,7 +167,7 @@ const Stories = () => {
 
   const handleEditStory = async (story: any) => {
     try {
-      // Fetch the full story data from database to get arrays
+      // Fetch the full story data from database
       const { data: fullStoryData, error } = await supabase
         .from('user_stories')
         .select('*')
@@ -163,15 +184,24 @@ const Stories = () => {
         return;
       }
 
+      // Fetch test cases for this story
+      const { data: testCasesData, error: testCasesError } = await supabase
+        .from('test_cases')
+        .select('*')
+        .eq('user_story_id', story.dbId);
+
+      if (testCasesError) {
+        console.error('Error fetching test cases:', testCasesError);
+      }
+
       setEditingStory({
         ...story,
         title: fullStoryData.title,
         description: fullStoryData.description,
         priority: fullStoryData.priority?.charAt(0).toUpperCase() + fullStoryData.priority?.slice(1) || "Medium",
         estimatedHours: fullStoryData.estimated_hours || 0,
-        // Use actual arrays from database
         acceptance_criteria: fullStoryData.acceptance_criteria || [],
-        test_cases: fullStoryData.test_cases || []
+        test_cases: testCasesData || [] // Now contains full test case objects
       });
       setShowEditModal(true);
 
@@ -201,7 +231,7 @@ const Stories = () => {
         return;
       }
 
-      // Update story in database
+      // Update story in database (remove test_cases)
       const { error } = await supabase
         .from('user_stories')
         .update({
@@ -210,7 +240,6 @@ const Stories = () => {
           priority: editingStory.priority?.toLowerCase(),
           estimated_hours: parseInt(editingStory.estimatedHours) || 0,
           acceptance_criteria: editingStory.acceptance_criteria,
-          test_cases: editingStory.test_cases,
           updated_at: new Date().toISOString()
         })
         .eq('id', originalStory.dbId);
@@ -223,6 +252,34 @@ const Stories = () => {
           variant: "destructive",
         });
         return;
+      }
+
+      // Handle test cases - delete existing ones and insert new ones
+      if (editingStory.test_cases && editingStory.test_cases.length > 0) {
+        // First delete existing test cases for this story
+        await supabase
+          .from('test_cases')
+          .delete()
+          .eq('user_story_id', originalStory.dbId);
+
+        // Insert updated test cases
+        const testCasesToInsert = editingStory.test_cases.map((testCase: any) => ({
+          user_story_id: originalStory.dbId,
+          name: testCase.name || testCase, // Handle both old string format and new object format
+          description: testCase.description || '',
+          steps: testCase.steps || [],
+          expected_result: testCase.expected_result || '',
+          priority: testCase.priority || 'medium',
+          status: testCase.status || 'not_executed'
+        }));
+
+        const { error: testCaseError } = await supabase
+          .from('test_cases')
+          .insert(testCasesToInsert);
+
+        if (testCaseError) {
+          console.error('Error updating test cases:', testCaseError);
+        }
       }
 
       // Update local state
@@ -799,29 +856,81 @@ const Stories = () => {
 
               <div className="space-y-2">
                 <Label>Test Cases</Label>
-                <div className="space-y-2">
-                  {(editingStory.test_cases || [])?.map((testCase: string, index: number) => (
-                    <div key={index} className="flex gap-2">
-                      <Input
-                        value={testCase}
-                        onChange={(e) => {
-                          const newTestCases = [...(editingStory.test_cases || [])];
-                          newTestCases[index] = e.target.value;
-                          setEditingStory({...editingStory, test_cases: newTestCases});
-                        }}
-                        className="bg-surface-subtle border-border"
-                        placeholder="Test case"
-                      />
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          const newTestCases = (editingStory.test_cases || []).filter((_: any, i: number) => i !== index);
-                          setEditingStory({...editingStory, test_cases: newTestCases});
-                        }}
-                      >
-                        Remove
-                      </Button>
+                <div className="space-y-4">
+                  {(editingStory.test_cases || [])?.map((testCase: any, index: number) => (
+                    <div key={index} className="border border-border rounded-lg p-4 space-y-3">
+                      <div className="flex gap-2 items-center">
+                        <Input
+                          value={testCase.name || testCase} // Handle both object and string format
+                          onChange={(e) => {
+                            const newTestCases = [...(editingStory.test_cases || [])];
+                            if (typeof testCase === 'string') {
+                              newTestCases[index] = e.target.value;
+                            } else {
+                              newTestCases[index] = { ...testCase, name: e.target.value };
+                            }
+                            setEditingStory({...editingStory, test_cases: newTestCases});
+                          }}
+                          className="bg-surface-subtle border-border"
+                          placeholder="Test case name"
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const newTestCases = (editingStory.test_cases || []).filter((_: any, i: number) => i !== index);
+                            setEditingStory({...editingStory, test_cases: newTestCases});
+                          }}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                      
+                      {typeof testCase === 'object' && (
+                        <>
+                          <Textarea
+                            value={testCase.description || ''}
+                            onChange={(e) => {
+                              const newTestCases = [...(editingStory.test_cases || [])];
+                              newTestCases[index] = { ...testCase, description: e.target.value };
+                              setEditingStory({...editingStory, test_cases: newTestCases});
+                            }}
+                            className="bg-surface-subtle border-border"
+                            placeholder="Test case description"
+                            rows={2}
+                          />
+                          
+                          <div className="grid grid-cols-2 gap-2">
+                            <select
+                              value={testCase.priority || 'medium'}
+                              onChange={(e) => {
+                                const newTestCases = [...(editingStory.test_cases || [])];
+                                newTestCases[index] = { ...testCase, priority: e.target.value };
+                                setEditingStory({...editingStory, test_cases: newTestCases});
+                              }}
+                              className="px-3 py-2 text-sm rounded-md border border-border bg-surface-subtle text-foreground"
+                            >
+                              <option value="high">High</option>
+                              <option value="medium">Medium</option>
+                              <option value="low">Low</option>
+                            </select>
+                            
+                            <select
+                              value={testCase.status || 'not_executed'}
+                              onChange={(e) => {
+                                const newTestCases = [...(editingStory.test_cases || [])];
+                                newTestCases[index] = { ...testCase, status: e.target.value };
+                                setEditingStory({...editingStory, test_cases: newTestCases});
+                              }}
+                              className="px-3 py-2 text-sm rounded-md border border-border bg-surface-subtle text-foreground"
+                            >
+                              <option value="not_executed">Not Executed</option>
+                              <option value="passed">Passed</option>
+                              <option value="failed">Failed</option>
+                            </select>
+                          </div>
+                        </>
+                      )}
                     </div>
                   ))}
                   <Button
@@ -830,7 +939,14 @@ const Stories = () => {
                     onClick={() => {
                       setEditingStory({
                         ...editingStory,
-                        test_cases: [...(editingStory.test_cases || []), ""]
+                        test_cases: [...(editingStory.test_cases || []), {
+                          name: "",
+                          description: "",
+                          steps: [],
+                          expected_result: "",
+                          priority: "medium",
+                          status: "not_executed"
+                        }]
                       });
                     }}
                   >
