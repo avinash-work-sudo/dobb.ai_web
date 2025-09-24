@@ -37,6 +37,7 @@ import {
 } from "lucide-react";
 
 const Stories = () => {
+  console.log('Stories component loaded'); // Force rebuild
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
