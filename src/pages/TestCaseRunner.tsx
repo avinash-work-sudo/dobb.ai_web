@@ -117,6 +117,49 @@ const TestCaseRunner = () => {
     return numberedSteps.join(`\n`) + (expectedResult ? `\n\nExpected Result: ${expectedResult}` : '');
   };
 
+  // Update test case status in database
+  const updateTestCaseStatus = useCallback(async (status: string, errorMessage?: string) => {
+    if (!testCase?.id) return;
+
+    try {
+      const updateData: any = {
+        status: status,
+        updated_at: new Date().toISOString()
+      };
+
+      // If there's an error message, we could store it in a separate field if needed
+      if (errorMessage) {
+        // You might want to add an error_message column to your test_cases table
+        // updateData.error_message = errorMessage;
+      }
+
+      const { error } = await supabase
+        .from('test_cases')
+        .update(updateData)
+        .eq('id', testCase.id);
+
+      if (error) {
+        console.error('Error updating test case status:', error);
+        toast({
+          title: "Status Update Failed",
+          description: "Failed to update test case status in database",
+          variant: "destructive",
+        });
+      } else {
+        console.log(`Test case status updated to: ${status}`);
+        // Update local test case state
+        setTestCase(prev => prev ? { ...prev, status } : null);
+      }
+    } catch (error) {
+      console.error('Error updating test case status:', error);
+      toast({
+        title: "Status Update Failed",
+        description: "Failed to update test case status",
+        variant: "destructive",
+      });
+    }
+  }, [testCase, toast]);
+
   // Fetch test case data from database
   useEffect(() => {
     let isMounted = true;
@@ -377,6 +420,9 @@ const TestCaseRunner = () => {
         setResult(data);
         setCurrentStep('Failed to start automation');
         
+        // Update test case status to failed since automation couldn't start
+        await updateTestCaseStatus('failed', data.error || "Could not start test automation");
+        
         toast({
           title: "Failed to Start",
           description: data.error || "Could not start test automation",
@@ -387,13 +433,17 @@ const TestCaseRunner = () => {
     } catch (error) {
       console.error('Automation failed:', error);
       setIsRunning(false);
+      const errorMessage = error instanceof Error ? error.message : 'Network error';
       setResult({ 
         executionId: '',
         status: 'error',
         framework,
-        error: error instanceof Error ? error.message : 'Network error'
+        error: errorMessage
       });
       setCurrentStep('Network error occurred');
+      
+      // Update test case status to failed due to network error
+      await updateTestCaseStatus('failed', errorMessage);
       
       toast({
         title: "Network Error",
@@ -445,6 +495,10 @@ const TestCaseRunner = () => {
             setIsRunning(false);
             setProgress(100);
             setCurrentStep(data.execution?.status === 'passed' ? 'Test completed successfully!' : 'Test failed');
+            
+            // Update test case status in database
+            const newStatus = data.execution.status === 'passed' ? 'passed' : 'failed';
+            await updateTestCaseStatus(newStatus, data.execution.error_message);
             
             // Show completion toast only if WebSocket didn't already show it
             if (!hasShownCompletionToast) {
@@ -535,6 +589,9 @@ const TestCaseRunner = () => {
       
       setIsRunning(false);
       setCurrentStep('Stopped by user');
+      
+      // Update test case status to indicate it was stopped (you might want to use 'not_executed' or create a 'stopped' status)
+      await updateTestCaseStatus('not_executed', 'Test execution was stopped by user');
       
       toast({
         title: "Test Stopped",

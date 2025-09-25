@@ -184,6 +184,10 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
           status: featureData.status,
           priority: "medium", // You can derive this from impact analysis if needed
           sourceType,
+          file_url: featureData.file_url,
+          prd_link: featureData.prd_link,
+          figma_link: featureData.figma_link,
+          transcript_link: featureData.transcript_link,
         };
 
         setFeature(transformedFeature);
@@ -331,9 +335,11 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
         return;
       }
 
+      console.log("feature?.file_url", feature?.file_url);
       // Generate user stories using the API
       const userStoriesResponse = await userStoriesAPI.generateUserStories({
-        featureId: String(id)
+        featureId: String(id),
+        prdLink: feature?.file_url || feature?.prd_link || ""
       });
 
       if (!userStoriesResponse.success) {
