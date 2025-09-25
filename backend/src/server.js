@@ -32,22 +32,26 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Security middleware
-app.use(helmet({
-  crossOriginEmbedderPolicy: false, // Required for browser automation
-}));
+app.use(
+  helmet({
+    crossOriginEmbedderPolicy: false // Required for browser automation
+  })
+);
 
 // CORS configuration
-app.use(cors({
-  origin: [
-    process.env.CORS_ORIGIN || 'http://localhost:5173',
-    'http://localhost:8080',
-    'http://localhost:8081',
-    'http://localhost:8082'
-  ],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+app.use(
+  cors({
+    origin: [
+      process.env.CORS_ORIGIN || 'http://localhost:5173',
+      'http://localhost:8080',
+      'http://localhost:8081',
+      'http://localhost:8082'
+    ],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  })
+);
 
 // Logging
 app.use(morgan('combined'));
@@ -86,7 +90,7 @@ app.use('*', (req, res) => {
 // Global error handler
 app.use((error, req, res, next) => {
   console.error('Server Error:', error);
-  
+
   res.status(error.status || 500).json({
     error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
     timestamp: new Date().toISOString(),
@@ -105,12 +109,12 @@ const wss = new WebSocketServer({ server });
 
 wss.on('connection', (ws, req) => {
   console.log('WebSocket client connected:', req.socket.remoteAddress);
-  
-  ws.on('message', (data) => {
+
+  ws.on('message', data => {
     try {
       const message = JSON.parse(data);
       console.log('WebSocket message:', message);
-      
+
       // Handle different message types
       switch (message.type) {
         case 'subscribe_to_automation':
@@ -123,7 +127,7 @@ wss.on('connection', (ws, req) => {
       ws.send(JSON.stringify({ error: 'Invalid message format' }));
     }
   });
-  
+
   ws.on('close', () => {
     console.log('WebSocket client disconnected');
   });
@@ -133,11 +137,13 @@ wss.on('connection', (ws, req) => {
 export function broadcastAutomationUpdate(automationId, update) {
   wss.clients.forEach(client => {
     if (client.automationId === automationId && client.readyState === 1) {
-      client.send(JSON.stringify({
-        type: 'automation_update',
-        automationId,
-        ...update
-      }));
+      client.send(
+        JSON.stringify({
+          type: 'automation_update',
+          automationId,
+          ...update
+        })
+      );
     }
   });
 }

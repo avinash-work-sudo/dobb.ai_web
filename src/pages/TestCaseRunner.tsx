@@ -1,14 +1,4 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { Progress } from '@/components/ui/progress';
-import { Separator } from '@/components/ui/separator';
-import { useToast } from '@/hooks/use-toast';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -17,25 +7,37 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
-import { 
-  Play, 
-  Square, 
-  Loader2, 
-  CheckCircle, 
-  XCircle, 
-  Clock,
-  ExternalLink,
-  Download,
-  RefreshCw,
-  Eye,
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
+import {
   ArrowLeft,
-  TestTube,
-  Settings,
-  User,
   BarChart3,
+  CheckCircle,
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  Download,
+  ExternalLink,
+  Eye,
+  FileText,
   Home,
-  FileText
+  Loader2,
+  Play,
+  RefreshCw,
+  Settings,
+  Square,
+  TestTube,
+  User,
+  XCircle
 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 
 interface ExecutionStep {
   stepNumber: number;
@@ -72,6 +74,14 @@ const TestCaseRunner = () => {
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState('');
   const [ws, setWs] = useState<WebSocket | null>(null);
+  const [showReport, setShowReport] = useState(false);
+  const [reportUrl, setReportUrl] = useState<string | null>(null);
+  const [currentExecutionId, setCurrentExecutionId] = useState<string | null>(null);
+  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
+  const [hasShownCompletionToast, setHasShownCompletionToast] = useState(false);
+  
+  // Use ref for polling interval to avoid closure issues
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Mock test case data - in real app, this would be fetched based on testCaseId
   const testCase = {
@@ -131,18 +141,54 @@ const TestCaseRunner = () => {
     };
   }, []);
 
+  // Cleanup effect for polling interval
+  useEffect(() => {
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+    };
+  }, []);
+
   const handleAutomationUpdate = (update: any) => {
     if (update.status === 'progress') {
       setCurrentStep(update.step || 'Processing...');
       setProgress(prev => Math.min(prev + 10, 90));
     } else if (update.status === 'completed' || update.status === 'failed' || update.status === 'error') {
+      // Stop polling first
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+        setPollingInterval(null);
+      }
+      
       setIsRunning(false);
       setProgress(100);
       setCurrentStep(update.status === 'completed' ? 'Completed successfully!' : 'Automation failed');
       
-      // Fetch final results
-      if (result?.executionId) {
-        fetchExecutionStatus(result.executionId);
+      // Show completion toast only once per execution
+      if (!hasShownCompletionToast) {
+        setHasShownCompletionToast(true);
+        toast({
+          title: update.status === 'completed' ? "Test Passed" : "Test Failed",
+          description: `Test case "${testCase.name}" execution completed`,
+          variant: update.status === 'completed' ? "default" : "destructive"
+        });
+      }
+      
+      // Fetch final results using current execution ID
+      if (currentExecutionId) {
+        fetchExecutionStatus(currentExecutionId).then(() => {
+          // Auto-show report if test completed successfully
+          if (update.status === 'completed') {
+            setTimeout(() => {
+              const url = `http://localhost:3001/api/artifacts/${currentExecutionId}/report`;
+              setReportUrl(url);
+              setShowReport(true);
+            }, 500);
+          }
+        });
       }
     }
   };
@@ -150,10 +196,24 @@ const TestCaseRunner = () => {
   const runAutomation = async () => {
     if (!task.trim()) return;
 
+    // Clear any existing polling
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+    if (pollingInterval) {
+      clearInterval(pollingInterval);
+      setPollingInterval(null);
+    }
+
     setIsRunning(true);
     setResult(null);
     setProgress(5);
     setCurrentStep('Starting test case automation...');
+    setShowReport(false);
+    setReportUrl(null);
+    setCurrentExecutionId(null);
+    setHasShownCompletionToast(false); // Reset completion toast flag
 
     try {
       const response = await fetch('http://localhost:3001/api/automation/run', {
@@ -176,6 +236,7 @@ const TestCaseRunner = () => {
       
       if (data.success) {
         setResult(data);
+        setCurrentExecutionId(data.executionId);
         setProgress(20);
         
         // Subscribe to WebSocket updates for this execution
@@ -225,6 +286,12 @@ const TestCaseRunner = () => {
   };
 
   const pollExecutionStatus = async (executionId: string) => {
+    // Clear any existing polling interval
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+
     const poll = async () => {
       try {
         const response = await fetch(`http://localhost:3001/api/automation/status/${executionId}`);
@@ -234,32 +301,59 @@ const TestCaseRunner = () => {
           setResult(data);
           
           if (data.isComplete) {
+            // Clear polling interval
+            if (pollingIntervalRef.current) {
+              clearInterval(pollingIntervalRef.current);
+              pollingIntervalRef.current = null;
+              setPollingInterval(null);
+            }
+            
             setIsRunning(false);
             setProgress(100);
             setCurrentStep(data.execution.status === 'passed' ? 'Test completed successfully!' : 'Test failed');
             
-            toast({
-              title: data.execution.status === 'passed' ? "Test Passed" : "Test Failed",
-              description: `Test case "${testCase.name}" execution completed`,
-              variant: data.execution.status === 'passed' ? "default" : "destructive"
-            });
+            // Show completion toast only if WebSocket didn't already show it
+            if (!hasShownCompletionToast) {
+              setHasShownCompletionToast(true);
+              toast({
+                title: data.execution.status === 'passed' ? "Test Passed" : "Test Failed",
+                description: `Test case "${testCase.name}" execution completed`,
+                variant: data.execution.status === 'passed' ? "default" : "destructive"
+              });
+            }
+            
+            // Auto-show report if completed successfully
+            if (data.execution.status === 'passed') {
+              setTimeout(() => {
+                const url = `http://localhost:3001/api/artifacts/${executionId}/report`;
+                setReportUrl(url);
+                setShowReport(true);
+              }, 500);
+            }
             return;
           }
         }
-        
-        // Continue polling if not complete
-        if (isRunning) {
-          setTimeout(poll, 2000);
-        }
       } catch (error) {
         console.error('Polling error:', error);
+        // Stop polling on error
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current);
+          pollingIntervalRef.current = null;
+          setPollingInterval(null);
+        }
       }
     };
     
+    // Start polling with setInterval instead of setTimeout to avoid stale closures
+    const interval = setInterval(poll, 2000);
+    pollingIntervalRef.current = interval;
+    setPollingInterval(interval);
+    
+    // Initial poll
     poll();
   };
 
-  const fetchExecutionStatus = async (executionId: string) => {
+  const fetchExecutionStatus = async (executionId: string): Promise<void> => {
     try {
       const response = await fetch(`http://localhost:3001/api/automation/status/${executionId}`);
       const data = await response.json();
@@ -273,10 +367,20 @@ const TestCaseRunner = () => {
   };
 
   const stopAutomation = async () => {
-    if (!result?.executionId) return;
+    if (!currentExecutionId) return;
+
+    // Clear polling first
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+    if (pollingInterval) {
+      clearInterval(pollingInterval);
+      setPollingInterval(null);
+    }
 
     try {
-      await fetch(`http://localhost:3001/api/automation/stop/${result.executionId}`, {
+      await fetch(`http://localhost:3001/api/automation/stop/${currentExecutionId}`, {
         method: 'POST'
       });
       
@@ -289,6 +393,24 @@ const TestCaseRunner = () => {
       });
     } catch (error) {
       console.error('Error stopping automation:', error);
+    }
+  };
+
+  const toggleReportView = () => {
+    if (!currentExecutionId) return;
+    
+    if (!showReport) {
+      const url = `http://localhost:3001/api/artifacts/${currentExecutionId}/report`;
+      setReportUrl(url);
+      setShowReport(true);
+      
+      toast({
+        title: "Loading Report",
+        description: "Test execution report is loading...",
+      });
+    } else {
+      setShowReport(false);
+      setReportUrl(null);
     }
   };
 
@@ -637,11 +759,11 @@ const TestCaseRunner = () => {
 
                     {/* Action Buttons */}
                     <div className="flex flex-wrap gap-2">
-                      {result.executionId && (
+                      {currentExecutionId && (
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => fetchExecutionStatus(result.executionId)}
+                          onClick={() => fetchExecutionStatus(currentExecutionId)}
                         >
                           <RefreshCw className="mr-2 h-4 w-4" />
                           Refresh
@@ -652,10 +774,37 @@ const TestCaseRunner = () => {
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => window.open(`http://localhost:3001/api/artifacts/${result.executionId}/report`, '_blank')}
+                          onClick={toggleReportView}
                         >
                           <Eye className="mr-2 h-4 w-4" />
-                          View Report
+                          {showReport ? 'Hide Report' : 'View Report'}
+                          {showReport ? (
+                            <ChevronUp className="ml-1 h-3 w-3" />
+                          ) : (
+                            <ChevronDown className="ml-1 h-3 w-3" />
+                          )}
+                        </Button>
+                      )}
+
+                      {result.artifacts?.find(a => a.artifact_type === 'html_report') && (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => window.open(`http://localhost:3001/api/artifacts/${currentExecutionId}/report`, '_blank')}
+                        >
+                          <ExternalLink className="mr-2 h-4 w-4" />
+                          Open in New Tab
+                        </Button>
+                      )}
+
+                      {currentExecutionId && (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => window.open(`http://localhost:3001/api/artifacts/${currentExecutionId}/playwright-report`, '_blank')}
+                        >
+                          <ExternalLink className="mr-2 h-4 w-4" />
+                          Playwright Trace
                         </Button>
                       )}
 
@@ -663,7 +812,7 @@ const TestCaseRunner = () => {
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => window.open(`http://localhost:3001/api/artifacts/${result.executionId}/screenshots`, '_blank')}
+                          onClick={() => window.open(`http://localhost:3001/api/artifacts/${currentExecutionId}/screenshots`, '_blank')}
                         >
                           <Download className="mr-2 h-4 w-4" />
                           Screenshots
@@ -679,6 +828,46 @@ const TestCaseRunner = () => {
                         View All Results
                       </Button>
                     </div>
+
+                    {/* Inline Report Display */}
+                    {showReport && reportUrl && (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-medium text-foreground">Test Execution Report</h4>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => setShowReport(false)}
+                          >
+                            <XCircle className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <div className="border border-border rounded-lg overflow-hidden">
+                          <iframe
+                            src={'../backend/artifacts/reports/report_1758735090797.html'}
+                            className="w-full h-96 border-0"
+                            title="Test Execution Report"
+                            sandbox="allow-scripts allow-same-origin"
+                            onLoad={() => {
+                              toast({
+                                title: "Report Loaded",
+                                description: "Test execution report has been loaded successfully",
+                              });
+                            }}
+                            onError={() => {
+                              toast({
+                                title: "Report Error",
+                                description: "Failed to load the test execution report",
+                                variant: "destructive"
+                              });
+                            }}
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          📊 This report contains detailed execution steps, screenshots, and debugging information.
+                        </p>
+                      </div>
+                    )}
 
                     {/* Error Message */}
                     {(result.error || result.execution?.error_message) && (

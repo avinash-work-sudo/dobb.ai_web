@@ -64,3 +64,4 @@ print_info "Press Ctrl+C to stop both servers"
 trap 'echo ""; echo "🛑 Stopping servers..."; kill $BACKEND_PID $FRONTEND_PID 2>/dev/null; exit 0' INT
 wait
 
+

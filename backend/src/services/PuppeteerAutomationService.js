@@ -1,6 +1,6 @@
 import puppeteer from 'puppeteer';
 import { PuppeteerAgent } from '@midscene/web/puppeteer';
-import { mkdir, writeFile } from 'fs/promises';
+import { mkdir, writeFile, stat } from 'fs/promises';
 import { join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -42,7 +42,7 @@ export class PuppeteerAutomationService {
 
       // Create new page
       this.page = await this.browser.newPage();
-      
+
       // Set default timeout
       this.page.setDefaultTimeout(timeout);
       this.page.setDefaultNavigationTimeout(timeout);
@@ -67,7 +67,7 @@ export class PuppeteerAutomationService {
       });
 
       console.log('✅ Puppeteer initialized with Chrome');
-      
+
     } catch (error) {
       console.error('Puppeteer initialization failed:', error);
       throw error;
@@ -98,7 +98,7 @@ export class PuppeteerAutomationService {
 
       // Execute the main task
       const result = await this.executeTaskWithTracking(task);
-      
+
       // Take final screenshot
       await this.captureScreenshot('final_state');
 
@@ -118,10 +118,10 @@ export class PuppeteerAutomationService {
 
     } catch (error) {
       console.error('Task execution failed:', error);
-      
+
       // Capture error screenshot
       await this.captureScreenshot('error_state');
-      
+
       const duration = Date.now() - executionStart;
 
       return {
@@ -136,7 +136,7 @@ export class PuppeteerAutomationService {
 
   async executeTaskWithTracking(task) {
     const stepStart = Date.now();
-    
+
     try {
       // Record step start
       const stepId = uuidv4();
@@ -197,22 +197,26 @@ export class PuppeteerAutomationService {
     try {
       const artifactsDir = process.env.ARTIFACTS_PATH || './artifacts';
       const screenshotsDir = join(artifactsDir, 'screenshots');
-      
+
       await mkdir(screenshotsDir, { recursive: true });
-      
-      const filename = `${name}_${Date.now()}.png`;
+
+      const filename = `${name}_${this.executionId || Date.now()}.png`;
       const filepath = join(screenshotsDir, filename);
-      
+
       await this.page.screenshot({
         path: filepath,
         fullPage: true,
         quality: 90
       });
 
+      // Get file size
+      const stats = await stat(filepath);
+
       this.artifacts.push({
         id: uuidv4(),
         artifactType: 'screenshot',
         filePath: filepath,
+        fileSize: stats.size,
         mimeType: 'image/png',
         description: `Screenshot: ${name}`
       });
@@ -229,19 +233,23 @@ export class PuppeteerAutomationService {
     try {
       const artifactsDir = process.env.ARTIFACTS_PATH || './artifacts';
       const reportsDir = join(artifactsDir, 'reports');
-      
+
       await mkdir(reportsDir, { recursive: true });
-      
-      const reportFilename = `report_${Date.now()}.html`;
+
+      const reportFilename = `report_${this.executionId || Date.now()}.html`;
       const reportPath = join(reportsDir, reportFilename);
 
       const reportHtml = this.createReportHTML();
       await writeFile(reportPath, reportHtml);
 
+      // Get file size
+      const stats = await stat(reportPath);
+
       this.artifacts.push({
         id: uuidv4(),
         artifactType: 'html_report',
         filePath: reportPath,
+        fileSize: stats.size,
         mimeType: 'text/html',
         description: 'Automation execution report'
       });
