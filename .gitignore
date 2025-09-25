@@ -39,3 +39,6 @@ backend/database/*.db
 **/report_*.html
 **/playwright-report_*.html
 **/playwright-*.html
+
+.env
+./backend/.env
