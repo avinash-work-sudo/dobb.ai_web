@@ -100,9 +100,12 @@ const ChatBot = () => {
     setStreamingMessageId(messageId);
     let currentIndex = 0;
     
-    const streamNextChar = () => {
+    const streamNextChunk = () => {
       if (currentIndex < fullText.length) {
-        const displayText = fullText.substring(0, currentIndex + 1);
+        // Stream 2-4 characters at a time for faster display
+        const chunkSize = Math.floor(Math.random() * 3) + 2;
+        currentIndex = Math.min(currentIndex + chunkSize, fullText.length);
+        const displayText = fullText.substring(0, currentIndex);
         
         setMessages(prev => prev.map(msg => 
           msg.id === messageId 
@@ -110,8 +113,8 @@ const ChatBot = () => {
             : msg
         ));
         
-        currentIndex++;
-        streamingTimeoutRef.current = setTimeout(streamNextChar, 20 + Math.random() * 30); // Variable speed
+        // Faster streaming with 5-15ms delay instead of 20-50ms
+        streamingTimeoutRef.current = setTimeout(streamNextChunk, 5 + Math.random() * 10);
       } else {
         // Streaming complete
         setMessages(prev => prev.map(msg => 
@@ -123,7 +126,7 @@ const ChatBot = () => {
       }
     };
     
-    streamNextChar();
+    streamNextChunk();
   };
 
   useEffect(() => {
@@ -185,10 +188,10 @@ const ChatBot = () => {
       // Add empty message first
       setMessages(prev => [...prev, botResponse]);
       
-      // Start streaming the response
+      // Start streaming the response immediately
       setTimeout(() => {
         streamMessage(botMessageId, response.response);
-      }, 500); // Small delay before streaming starts
+      }, 100); // Minimal delay before streaming starts
       
       if (!isOpen) {
         setHasNewMessage(true);
@@ -211,7 +214,7 @@ const ChatBot = () => {
       // Stream the error message too
       setTimeout(() => {
         streamMessage(errorMessageId, "I'm sorry, I'm having trouble connecting right now. Please try again later.");
-      }, 300);
+      }, 100);
       
       if (!isOpen) {
         setHasNewMessage(true);
