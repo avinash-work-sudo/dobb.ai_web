@@ -1,12 +1,7 @@
 import { Badge } from "@/components/ui/badge";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator
-} from "@/components/ui/breadcrumb";
+
+import { useState, useEffect, useCallback } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -17,23 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  ArrowLeft,
-  BarChart3,
-  CheckCircle2,
-  Clock,
-  Edit,
-  Eye,
-  FileText,
-  Home,
-  Play,
-  Settings,
-  TestTube,
-  User,
-  XCircle
-} from "lucide-react";
-import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+
 
 interface TestCase {
   id: number;
@@ -44,6 +23,31 @@ interface TestCase {
   expectedResult: string;
   priority: string;
 }
+import {
+  Breadcrumb,
+  BreadcrumbEllipsis,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import { 
+  ArrowLeft, 
+  BarChart3, 
+  Settings, 
+  User, 
+  Play,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  TestTube,
+  Eye,
+  Edit,
+  FileText,
+  Home,
+  RefreshCw
+} from "lucide-react";
 
 const StoryDetail = () => {
   const { id, storyId } = useParams();
@@ -59,110 +63,153 @@ const StoryDetail = () => {
   const [story, setStory] = useState<any>(null);
   const [testCases, setTestCases] = useState<TestCase[]>([]);
   const [featureTitle, setFeatureTitle] = useState("Feature Analysis");
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Fetch story and test cases data from database
+  // Function to fetch story and test cases data from database
+  const fetchStoryData = useCallback(async (showRefreshIndicator = false) => {
+    if (!storyId) return;
+
+    if (showRefreshIndicator) {
+      setIsRefreshing(true);
+    }
+
+    try {
+      // Fetch user story from database
+      const { data: storyData, error: storyError } = await supabase
+        .from('user_stories')
+        .select('*')
+        .eq('id', storyId)
+        .single();
+
+      if (storyError) {
+        console.error('Error fetching user story:', storyError);
+        toast({
+          title: "Error",
+          description: "Failed to load user story data",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Fetch test cases for this story
+      const { data: testCasesData, error: testCasesError } = await supabase
+        .from('test_cases')
+        .select('*')
+        .eq('user_story_id', storyId)
+        .order('created_at', { ascending: true });
+
+      if (testCasesError) {
+        console.error('Error fetching test cases:', testCasesError);
+        toast({
+          title: "Error",
+          description: "Failed to load test cases",
+          variant: "destructive",
+        });
+      }
+
+      // Fetch feature info for breadcrumb
+      if (id) {
+        const { data: featureData, error: featureError } = await supabase
+          .from('features')
+          .select(`
+            id,
+            impact_analysis (
+              impact_json
+            )
+          `)
+          .eq('id', id)
+          .single();
+
+        if (!featureError && featureData?.impact_analysis?.[0]) {
+          const analysisData = featureData.impact_analysis[0].impact_json as any;
+          setFeatureTitle(analysisData?.title || `Feature ${id.slice(0, 8)}`);
+        }
+      }
+
+      // Transform story data for UI
+      const transformedStory = {
+        id: storyData.id,
+        title: storyData.title,
+        description: storyData.description,
+        acceptanceCriteria: storyData.acceptance_criteria || [],
+        priority: storyData.priority?.charAt(0).toUpperCase() + storyData.priority?.slice(1) || "Medium",
+        estimatedHours: storyData.estimated_hours || 0,
+      };
+
+      // Transform test cases data for UI
+      const transformedTestCases = (testCasesData || []).map((testCase: any) => ({
+        id: testCase.id,
+        name: testCase.name,
+        status: testCase.status || "not_executed",
+        description: testCase.description || "",
+        steps: testCase.steps || [],
+        expectedResult: testCase.expected_result || "",
+        priority: testCase.priority?.charAt(0).toUpperCase() + testCase.priority?.slice(1) || "Medium"
+      }));
+
+      setStory(transformedStory);
+      setTestCases(transformedTestCases);
+
+    } catch (error) {
+      console.error('Error fetching story data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load story data",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+      if (showRefreshIndicator) {
+        setIsRefreshing(false);
+      }
+    }
+  }, [storyId, id, toast]);
+
+  // Manual refresh function
+  const handleRefresh = async () => {
+    await fetchStoryData(true);
+    toast({
+      title: "Refreshed",
+      description: "Test case data has been refreshed",
+    });
+  };
+
+  // Initial data fetch
   useEffect(() => {
     let isMounted = true;
 
-    const fetchStoryData = async () => {
-      if (!storyId) return;
-
-      try {
-        // Fetch user story from database
-        const { data: storyData, error: storyError } = await supabase
-          .from('user_stories')
-          .select('*')
-          .eq('id', storyId)
-          .single();
-
-        if (storyError) {
-          console.error('Error fetching user story:', storyError);
-          toast({
-            title: "Error",
-            description: "Failed to load user story data",
-            variant: "destructive",
-          });
-          return;
-        }
-
-        // Fetch test cases for this story
-        const { data: testCasesData, error: testCasesError } = await supabase
-          .from('test_cases')
-          .select('*')
-          .eq('user_story_id', storyId)
-          .order('created_at', { ascending: true });
-
-        if (testCasesError) {
-          console.error('Error fetching test cases:', testCasesError);
-          toast({
-            title: "Error",
-            description: "Failed to load test cases",
-            variant: "destructive",
-          });
-        }
-
-        // Fetch feature info for breadcrumb
-        if (id) {
-          const { data: featureData, error: featureError } = await supabase
-            .from('features')
-            .select(`
-              id,
-              impact_analysis (
-                impact_json
-              )
-            `)
-            .eq('id', id)
-            .single();
-
-          if (!featureError && featureData?.impact_analysis?.[0]) {
-            const analysisData = featureData.impact_analysis[0].impact_json as any;
-            setFeatureTitle(analysisData?.title || `Feature ${id.slice(0, 8)}`);
-          }
-        }
-
-        if (!isMounted) return;
-
-        // Transform story data for UI
-        const transformedStory = {
-          id: storyData.id,
-          title: storyData.title,
-          description: storyData.description,
-          acceptanceCriteria: storyData.acceptance_criteria || [],
-          priority: storyData.priority?.charAt(0).toUpperCase() + storyData.priority?.slice(1) || "Medium",
-          estimatedHours: storyData.estimated_hours || 0,
-        };
-
-        // Transform test cases data for UI
-        const transformedTestCases = (testCasesData || []).map((testCase: any) => ({
-          id: testCase.id,
-          name: testCase.name,
-          status: testCase.status || "not_executed",
-          description: testCase.description || "",
-          steps: testCase.steps || [],
-          expectedResult: testCase.expected_result || "",
-          priority: testCase.priority?.charAt(0).toUpperCase() + testCase.priority?.slice(1) || "Medium"
-        }));
-
-        setStory(transformedStory);
-        setTestCases(transformedTestCases);
-
-      } catch (error) {
-        console.error('Error fetching story data:', error);
-        if (isMounted) {
-          toast({
-            title: "Error",
-            description: "Failed to load story data",
-            variant: "destructive",
-          });
-        }
-      } finally {
-        if (isMounted) setIsLoading(false);
+    const loadData = async () => {
+      if (isMounted) {
+        await fetchStoryData();
       }
     };
 
-    fetchStoryData();
+    loadData();
     return () => { isMounted = false; };
-  }, [storyId, id, toast]);
+  }, [storyId, id, toast, fetchStoryData]);
+
+  // Refresh data when window gains focus or becomes visible (e.g., when returning from test runner)
+  useEffect(() => {
+    const handleFocus = async () => {
+      console.log('Window focused, refreshing test case data...');
+      await fetchStoryData();
+    };
+
+    const handleVisibilityChange = async () => {
+      if (!document.hidden) {
+        console.log('Page became visible, refreshing test case data...');
+        await fetchStoryData();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [fetchStoryData]);
 
   // Update test cases state after successful edit
   const updateTestCaseInState = (updatedTestCase: any) => {
@@ -591,6 +638,16 @@ const StoryDetail = () => {
             </div>
             
             <div className="flex space-x-3">
+              <Button 
+                variant="outline"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="border-border hover:bg-surface-subtle"
+                title="Refresh test case data"
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                {isRefreshing ? 'Refreshing...' : 'Refresh'}
+              </Button>
               <Button 
                 variant="outline"
                 disabled={selectedTestCases.length === 0}
