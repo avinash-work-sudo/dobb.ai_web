@@ -1,13 +1,44 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useNavigate } from "react-router-dom";
-import { Github, Figma, Settings, CheckCircle2, ArrowRight, Loader2 } from "lucide-react";
+import { Github, Figma, Settings, CheckCircle2, ArrowRight, Loader2, Info } from "lucide-react";
 import { useOAuth } from "@/hooks/useOAuth";
+import { useState } from "react";
 
 const Onboarding = () => {
   const navigate = useNavigate();
   const { connectedAccounts, isConnected, connectProvider, disconnectProvider, isLoading } = useOAuth();
+  
+  // GitHub modal state
+  const [isGitHubModalOpen, setIsGitHubModalOpen] = useState(false);
+  const [gitHubForm, setGitHubForm] = useState({
+    username: '',
+    repoName: '',
+    owner: '',
+    pat: ''
+  });
+
+  // Atlassian modal state
+  const [isAtlassianModalOpen, setIsAtlassianModalOpen] = useState(false);
+  const [atlassianForm, setAtlassianForm] = useState({
+    apiToken: '',
+    email: '',
+    siteBaseUrl: '',
+    projectKey: ''
+  });
+
+  // Figma modal state
+  const [isFigmaModalOpen, setIsFigmaModalOpen] = useState(false);
+  const [figmaForm, setFigmaForm] = useState({
+    accessToken: '',
+    fileId: '',
+    teamId: ''
+  });
 
   const accounts = [
     {
@@ -37,8 +68,128 @@ const Onboarding = () => {
     if (isConnected(accountId)) {
       disconnectProvider(accountId);
     } else {
-      connectProvider(accountId);
+      // Special handling for GitHub, Figma, and Atlassian - open modals instead of direct connection
+      if (accountId === 'github') {
+        setIsGitHubModalOpen(true);
+      } else if (accountId === 'figma') {
+        setIsFigmaModalOpen(true);
+      } else if (accountId === 'atlassian') {
+        setIsAtlassianModalOpen(true);
+      } else {
+        connectProvider(accountId);
+      }
     }
+  };
+
+  const handleGitHubFormChange = (field: string, value: string) => {
+    setGitHubForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleGitHubSubmit = () => {
+    // Validate form
+    if (!gitHubForm.username || !gitHubForm.repoName || !gitHubForm.owner || !gitHubForm.pat) {
+      alert('Please fill in all fields');
+      return;
+    }
+
+    // Here you would typically send the data to your backend
+    console.log('GitHub connection data:', gitHubForm);
+    
+    // Simulate connection by directly setting localStorage and updating state
+    localStorage.setItem('github_connected', 'true');
+    localStorage.setItem('github_token', 'simulated_token_' + Date.now());
+    
+    // Force a re-render by updating the connected accounts
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'github_connected',
+      newValue: 'true'
+    }));
+    
+    // Close modal and reset form
+    setIsGitHubModalOpen(false);
+    setGitHubForm({ username: '', repoName: '', owner: '', pat: '' });
+  };
+
+  const handleGitHubModalClose = () => {
+    setIsGitHubModalOpen(false);
+    setGitHubForm({ username: '', repoName: '', owner: '', pat: '' });
+  };
+
+  const handleAtlassianFormChange = (field: string, value: string) => {
+    setAtlassianForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleAtlassianSubmit = () => {
+    // Validate form
+    if (!atlassianForm.apiToken || !atlassianForm.email || !atlassianForm.siteBaseUrl || !atlassianForm.projectKey) {
+      alert('Please fill in all fields');
+      return;
+    }
+
+    // Here you would typically send the data to your backend
+    console.log('Atlassian connection data:', atlassianForm);
+    
+    // Simulate connection by directly setting localStorage and updating state
+    localStorage.setItem('atlassian_connected', 'true');
+    localStorage.setItem('atlassian_token', 'simulated_token_' + Date.now());
+    
+    // Force a re-render by updating the connected accounts
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'atlassian_connected',
+      newValue: 'true'
+    }));
+    
+    // Close modal and reset form
+    setIsAtlassianModalOpen(false);
+    setAtlassianForm({ apiToken: '', email: '', siteBaseUrl: '', projectKey: '' });
+  };
+
+  const handleAtlassianModalClose = () => {
+    setIsAtlassianModalOpen(false);
+    setAtlassianForm({ apiToken: '', email: '', siteBaseUrl: '', projectKey: '' });
+  };
+
+  const handleFigmaFormChange = (field: string, value: string) => {
+    setFigmaForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleFigmaSubmit = () => {
+    // Validate form
+    if (!figmaForm.accessToken || !figmaForm.fileId || !figmaForm.teamId) {
+      alert('Please fill in all fields');
+      return;
+    }
+
+    // Here you would typically send the data to your backend
+    console.log('Figma connection data:', figmaForm);
+    
+    // Simulate connection by directly setting localStorage and updating state
+    localStorage.setItem('figma_connected', 'true');
+    localStorage.setItem('figma_token', 'simulated_token_' + Date.now());
+    
+    // Force a re-render by updating the connected accounts
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'figma_connected',
+      newValue: 'true'
+    }));
+    
+    // Close modal and reset form
+    setIsFigmaModalOpen(false);
+    setFigmaForm({ accessToken: '', fileId: '', teamId: '' });
+  };
+
+  const handleFigmaModalClose = () => {
+    setIsFigmaModalOpen(false);
+    setFigmaForm({ accessToken: '', fileId: '', teamId: '' });
   };
 
   const canProceed = accounts
@@ -174,6 +325,264 @@ const Onboarding = () => {
           </div>
         </div>
       </main>
+
+      {/* GitHub Connection Modal */}
+      <Dialog open={isGitHubModalOpen} onOpenChange={setIsGitHubModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2">
+              <Github className="h-5 w-5" />
+              <span>Connect GitHub Account</span>
+            </DialogTitle>
+            <DialogDescription>
+              Enter your GitHub repository details and Personal Access Token to connect your account.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="username" className="text-right">
+                Username
+              </Label>
+              <Input
+                id="username"
+                value={gitHubForm.username}
+                onChange={(e) => handleGitHubFormChange('username', e.target.value)}
+                placeholder="your-github-username"
+                className="col-span-3"
+              />
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="owner" className="text-right">
+                Owner
+              </Label>
+              <Input
+                id="owner"
+                value={gitHubForm.owner}
+                onChange={(e) => handleGitHubFormChange('owner', e.target.value)}
+                placeholder="username or organization"
+                className="col-span-3"
+              />
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="repoName" className="text-right">
+                Repository
+              </Label>
+              <Input
+                id="repoName"
+                value={gitHubForm.repoName}
+                onChange={(e) => handleGitHubFormChange('repoName', e.target.value)}
+                placeholder="repository-name"
+                className="col-span-3"
+              />
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Label htmlFor="pat" className="text-right cursor-help">
+                      PAT
+                    </Label>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Personal Access Token needs repository access permissions</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <Input
+                id="pat"
+                type="password"
+                value={gitHubForm.pat}
+                onChange={(e) => handleGitHubFormChange('pat', e.target.value)}
+                placeholder="Personal Access Token"
+                className="col-span-3"
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={handleGitHubModalClose}>
+              Cancel
+            </Button>
+            <Button onClick={handleGitHubSubmit} className="bg-gradient-primary text-white hover:opacity-90">
+              Connect GitHub
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Figma Connection Modal */}
+      <Dialog open={isFigmaModalOpen} onOpenChange={setIsFigmaModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2">
+              <Figma className="h-5 w-5" />
+              <span>Connect Figma Account</span>
+            </DialogTitle>
+            <DialogDescription>
+              Enter your Figma access token and file details to connect your design files for UI/UX impact analysis.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <div className="flex items-center justify-end gap-2">
+                <Label htmlFor="accessToken" className="text-right">
+                  Access Token
+                </Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Personal Access Token from your Figma account settings</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <Input
+                id="accessToken"
+                type="password"
+                value={figmaForm.accessToken}
+                onChange={(e) => handleFigmaFormChange('accessToken', e.target.value)}
+                placeholder="Figma Access Token"
+                className="col-span-3"
+              />
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="fileId" className="text-right">
+                File ID
+              </Label>
+              <Input
+                id="fileId"
+                value={figmaForm.fileId}
+                onChange={(e) => handleFigmaFormChange('fileId', e.target.value)}
+                placeholder="File ID from Figma URL"
+                className="col-span-3"
+              />
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="teamId" className="text-right">
+                Team ID
+              </Label>
+              <Input
+                id="teamId"
+                value={figmaForm.teamId}
+                onChange={(e) => handleFigmaFormChange('teamId', e.target.value)}
+                placeholder="Team ID from Figma URL"
+                className="col-span-3"
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={handleFigmaModalClose}>
+              Cancel
+            </Button>
+            <Button onClick={handleFigmaSubmit} className="bg-gradient-primary text-white hover:opacity-90">
+              Connect Figma
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Atlassian Connection Modal */}
+      <Dialog open={isAtlassianModalOpen} onOpenChange={setIsAtlassianModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2">
+              <Settings className="h-5 w-5" />
+              <span>Connect Atlassian Account</span>
+            </DialogTitle>
+            <DialogDescription>
+              Enter your Atlassian account details to connect Jira and Confluence for project management and documentation.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="email" className="text-right">
+                Email
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                value={atlassianForm.email}
+                onChange={(e) => handleAtlassianFormChange('email', e.target.value)}
+                placeholder="your-email@company.com"
+                className="col-span-3"
+              />
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <div className="flex items-center justify-end gap-2">
+                <Label htmlFor="apiToken" className="text-right">
+                  API Token
+                </Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>API Token from your Atlassian account settings</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <Input
+                id="apiToken"
+                type="password"
+                value={atlassianForm.apiToken}
+                onChange={(e) => handleAtlassianFormChange('apiToken', e.target.value)}
+                placeholder="API Token"
+                className="col-span-3"
+              />
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="siteBaseUrl" className="text-right">
+                Site URL
+              </Label>
+              <Input
+                id="siteBaseUrl"
+                value={atlassianForm.siteBaseUrl}
+                onChange={(e) => handleAtlassianFormChange('siteBaseUrl', e.target.value)}
+                placeholder="https://yourcompany.atlassian.net"
+                className="col-span-3"
+              />
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="projectKey" className="text-right">
+                Project Key
+              </Label>
+              <Input
+                id="projectKey"
+                value={atlassianForm.projectKey}
+                onChange={(e) => handleAtlassianFormChange('projectKey', e.target.value)}
+                placeholder="PROJ or Project ID"
+                className="col-span-3"
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={handleAtlassianModalClose}>
+              Cancel
+            </Button>
+            <Button onClick={handleAtlassianSubmit} className="bg-gradient-primary text-white hover:opacity-90">
+              Connect Atlassian
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
