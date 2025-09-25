@@ -33,7 +33,6 @@ import {
   RefreshCw,
   Settings,
   Square,
-  TestTube,
   User,
   XCircle
 } from 'lucide-react';
@@ -612,8 +611,8 @@ const TestCaseRunner = () => {
               >
                 <ArrowLeft className="h-5 w-5 text-muted-foreground" />
               </Button>
-              <div className="bg-gradient-primary p-2 rounded-lg shadow-elegant">
-                <TestTube className="h-6 w-6 text-white" />
+              <div className="p-2 rounded-lg shadow-elegant">
+                <img src="/head.png" alt="DOBB.ai" className="size-10" />
               </div>
               <h1 className="text-xl font-bold text-foreground">Test Case Runner</h1>
             </div>

@@ -1,41 +1,38 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { impactAnalysisAPI, userStoriesAPI } from "@/api/impact-analysis";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Breadcrumb,
-  BreadcrumbEllipsis,
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
-  BreadcrumbSeparator,
+  BreadcrumbSeparator
 } from "@/components/ui/breadcrumb";
-import { 
-  ArrowLeft, 
-  BarChart3, 
-  Settings, 
-  User, 
-  Loader2,
-  CheckCircle2,
-  AlertTriangle,
-  Code,
-  Database,
-  Cpu,
-  Globe,
-  RefreshCw,
-  FileEdit,
-  Users,
-  Home
-} from "lucide-react";
-import { impactAnalysisAPI, userStoriesAPI } from "@/api/impact-analysis";
-import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  BarChart3,
+  CheckCircle2,
+  Code,
+  Cpu,
+  Database,
+  FileEdit,
+  Globe,
+  Home,
+  Loader2,
+  RefreshCw,
+  Settings,
+  User,
+  Users
+} from "lucide-react";
+import React, { useCallback, useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 
 const FeatureDetail = () => {
   const { id } = useParams();
@@ -445,8 +442,8 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
                 >
                   <ArrowLeft className="h-5 w-5 text-muted-foreground" />
                 </Button>
-                <div className="bg-gradient-primary p-2 rounded-lg shadow-elegant">
-                  <BarChart3 className="h-6 w-6 text-white" />
+                <div className="p-2 rounded-lg shadow-elegant">
+                  <img src="/head.png" alt="DOBB.ai" className="size-10" />
                 </div>
                 <h1 className="text-xl font-bold text-foreground">DOBB.ai</h1>
               </div>
