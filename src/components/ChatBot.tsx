@@ -35,12 +35,12 @@ const MarkdownMessage = ({ content, isStreaming }: { content: string; isStreamin
           ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
           li: ({ children }) => <li className="text-sm">{children}</li>,
           code: ({ children }) => (
-            <code className="bg-surface-subtle/50 px-1 py-0.5 rounded text-xs font-mono">
+            <code className="bg-surface-subtle/50 px-1 py-0.5 rounded text-xs font-mono break-all">
               {children}
             </code>
           ),
           pre: ({ children }) => (
-            <pre className="bg-surface-subtle/50 p-2 rounded text-xs font-mono overflow-x-auto mb-2">
+            <pre className="bg-surface-subtle/50 p-2 rounded text-xs font-mono overflow-x-auto mb-2 max-w-full">
               {children}
             </pre>
           ),
@@ -262,7 +262,7 @@ const ChatBot = () => {
       <div className={`fixed z-50 ${isMinimized ? 'bottom-6 right-6' : 'md:bottom-6 md:right-6 inset-x-4 bottom-4 md:inset-auto'}`}>
         <Card 
           className={`bg-surface-elevated border border-border shadow-elegant transition-all duration-300 ${
-            isMinimized ? 'w-80 h-16' : 'w-full h-[calc(100vh-2rem)] md:w-[500px] md:h-[650px]'
+            isMinimized ? 'w-80 h-16' : 'w-full max-h-[calc(100vh-2rem)] md:w-[500px] md:max-h-[650px] flex flex-col'
           }`}
         >
         <CardHeader 
@@ -316,8 +316,8 @@ const ChatBot = () => {
         </CardHeader>
 
         {!isMinimized && (
-          <CardContent className="p-0 flex flex-col h-[calc(100vh-8rem)] md:h-[calc(650px-73px)]">
-            <ScrollArea className="flex-1 p-4">
+          <CardContent className="p-0 flex flex-col flex-1 min-h-0">
+            <ScrollArea className="flex-1 p-4 min-h-0">
               <div className="space-y-4">
                 {messages.map((message) => (
                   <div
@@ -338,7 +338,7 @@ const ChatBot = () => {
                       </AvatarFallback>
                     </Avatar>
                     <div 
-                      className={`max-w-[70%] rounded-xl px-3 py-2 ${
+                      className={`max-w-[70%] rounded-xl px-3 py-2 break-words ${
                         message.sender === 'user'
                           ? 'bg-primary text-primary-foreground ml-auto'
                           : 'bg-surface-subtle text-foreground'
@@ -368,7 +368,7 @@ const ChatBot = () => {
                         <Bot className="h-4 w-4" />
                       </AvatarFallback>
                     </Avatar>
-                    <div className="bg-surface-subtle text-foreground rounded-xl px-3 py-2 max-w-[70%]">
+                    <div className="bg-surface-subtle text-foreground rounded-xl px-3 py-2 max-w-[70%] break-words">
                       <div className="flex space-x-1">
                         <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" />
                         <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
@@ -381,7 +381,7 @@ const ChatBot = () => {
               <div ref={messagesEndRef} />
             </ScrollArea>
 
-            <div className="border-t border-border p-4">
+            <div className="border-t border-border p-4 flex-shrink-0">
               <div className="flex items-center space-x-2">
                 <Input
                   value={inputValue}
