@@ -1,25 +1,22 @@
-import { useState, useEffect } from "react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { 
-  Settings, 
-  User, 
-  Search,
-  Filter,
+import {
   ArrowLeft,
-  BarChart3,
   Clock,
-  AlertTriangle,
-  CheckCircle2,
-  TrendingUp,
-  FileText,
   Figma,
+  FileText,
+  Filter,
+  Search,
+  Settings,
+  TrendingUp,
+  User,
   Users
 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Features = () => {
   const navigate = useNavigate();
@@ -182,8 +179,8 @@ const Features = () => {
               >
                 <ArrowLeft className="h-5 w-5 text-muted-foreground" />
               </Button>
-              <div className="bg-gradient-primary p-2 rounded-lg shadow-elegant">
-                <BarChart3 className="h-6 w-6 text-white" />
+              <div className="p-2 rounded-lg shadow-elegant">
+                <img src="/head.png" alt="DOBB.ai" className="size-10" />
               </div>
               <h1 className="text-xl font-bold text-foreground">DOBB.ai</h1>
             </div>
