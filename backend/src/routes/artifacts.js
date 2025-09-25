@@ -148,12 +148,25 @@ router.get('/:executionId/debug', async (req, res) => {
 });
 
 // GET /api/artifacts/:executionId/report
-router.get('/:executionId/report', async (req, res) => {
+router.get('/:executionId/report/:reportType', async (req, res) => {
   try {
-    const { executionId } = req.params;
+    const { executionId, reportType } = req.params;
+    let reportPath = null;
+    if (reportType === 'playwright') {
+      reportPath = join(
+        process.env.MIDSCENE_RUN_DIR || './midscene_run',
+        'report',
+        `playwright-report_${executionId}.html`
+      );
+    } else {
+      reportPath = join(
+        process.env.ARTIFACTS_PATH || './artifacts',
+        'reports',
+        `report_${executionId}.html`
+      );
+    }
 
     console.log(`🔍 Searching for report artifact for executionId: ${executionId}`);
-    const reportPath = join(process.env.ARTIFACTS_PATH, 'reports', `report_${executionId}.html`);
     console.log(`📄 Report path: ${reportPath}`);
     const reportContentLocal = await readFile(reportPath, 'utf8');
 

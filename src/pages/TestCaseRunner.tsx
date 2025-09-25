@@ -790,7 +790,7 @@ const TestCaseRunner = () => {
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => window.open(`http://localhost:3001/api/artifacts/${currentExecutionId}/report`, '_blank')}
+                          onClick={() => window.open(`http://localhost:3001/api/artifacts/${currentExecutionId}/report/normal`, '_blank')}
                         >
                           <ExternalLink className="mr-2 h-4 w-4" />
                           Open in New Tab
@@ -801,7 +801,7 @@ const TestCaseRunner = () => {
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => window.open(`http://localhost:3001/api/artifacts/${currentExecutionId}/playwright-report`, '_blank')}
+                          onClick={() => window.open(`http://localhost:3001/api/artifacts/${currentExecutionId}/report/playwright`, '_blank')}
                         >
                           <ExternalLink className="mr-2 h-4 w-4" />
                           Playwright Trace
