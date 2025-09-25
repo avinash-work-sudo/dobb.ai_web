@@ -15,7 +15,7 @@ export class TestResultStorage {
       id,
       executionData.testName,
       executionData.taskDescription,
-      executionData.framework,
+      executionData.framework || 'playwright',
       executionData.status,
       executionData.startedAt?.toISOString(),
       executionData.userId,

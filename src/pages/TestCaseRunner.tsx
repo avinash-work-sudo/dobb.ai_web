@@ -37,7 +37,7 @@ import {
   User,
   XCircle
 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -55,11 +55,21 @@ interface AutomationResult {
   status: string;
   framework: string;
   steps?: ExecutionStep[];
-  artifacts?: any[];
+  artifacts?: Array<{
+    artifact_type: string;
+    path: string;
+    [key: string]: unknown;
+  }>;
   reportUrl?: string;
   error?: string;
   isComplete?: boolean;
-  execution?: any;
+  execution?: {
+    status: string;
+    duration_ms?: number;
+    started_at?: string;
+    error_message?: string;
+    [key: string]: unknown;
+  };
 }
 
 const TestCaseRunner = () => {
@@ -69,7 +79,7 @@ const TestCaseRunner = () => {
   
   // Automation states
   const [task, setTask] = useState('');
-  const [framework, setFramework] = useState<'playwright' | 'puppeteer'>('playwright');
+  const framework = 'playwright';
   const [headless, setHeadless] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
   const [result, setResult] = useState<AutomationResult | null>(null);
@@ -81,9 +91,22 @@ const TestCaseRunner = () => {
   const [currentExecutionId, setCurrentExecutionId] = useState<string | null>(null);
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
   const [hasShownCompletionToast, setHasShownCompletionToast] = useState(false);
-  const [testCase, setTestCase] = useState<any>(null);
+  const [testCase, setTestCase] = useState<{
+    id: string;
+    name: string;
+    status: string;
+    description: string;
+    steps: string[];
+    expectedResult: string;
+    priority: string;
+  } | null>(null);
   const [isLoadingTestCase, setIsLoadingTestCase] = useState(true);
-  const [userStory, setUserStory] = useState<any>(null);
+  const [userStory, setUserStory] = useState<{
+    id: string;
+    title: string;
+    [key: string]: unknown;
+  } | null>(null);
+  const [executionTimeout, setExecutionTimeout] = useState<NodeJS.Timeout | null>(null);
   
   // Use ref for polling interval to avoid closure issues
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -170,6 +193,61 @@ const TestCaseRunner = () => {
     return () => { isMounted = false; };
   }, [testCaseId, storyId, toast]);
 
+  const handleAutomationUpdate = useCallback((update: {
+    status: string;
+    step?: string;
+    [key: string]: unknown;
+  }) => {
+    console.log('WebSocket update received:', update);
+    
+    if (update.status === 'progress') {
+      setCurrentStep(update.step || 'Processing...');
+      setProgress(prev => Math.min(prev + 10, 90));
+    } else if (update.status === 'completed' || update.status === 'failed' || update.status === 'error') {
+      // Stop polling first
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+        setPollingInterval(null);
+      }
+      
+      // Clear execution timeout
+      if (executionTimeout) {
+        clearTimeout(executionTimeout);
+        setExecutionTimeout(null);
+      }
+      
+      // Immediately update UI state
+      setIsRunning(false);
+      setProgress(100);
+      setCurrentStep(update.status === 'completed' ? 'Completed successfully!' : 'Automation failed');
+      
+      // Show completion toast only once per execution
+      if (!hasShownCompletionToast) {
+        setHasShownCompletionToast(true);
+        toast({
+          title: update.status === 'completed' ? "Test Passed" : "Test Failed",
+          description: `Test case "${testCase?.name || 'Unknown'}" execution completed`,
+          variant: update.status === 'completed' ? "default" : "destructive"
+        });
+      }
+      
+      // Fetch final results using current execution ID
+      if (currentExecutionId) {
+        fetchExecutionStatus(currentExecutionId).then(() => {
+          // Auto-show report if test completed successfully
+          if (update.status === 'completed') {
+            setTimeout(() => {
+              const url = `http://localhost:3001/api/artifacts/${currentExecutionId}/report`;
+              setReportUrl(url);
+              setShowReport(true);
+            }, 500);
+          }
+        });
+      }
+    }
+  }, [currentExecutionId, executionTimeout, hasShownCompletionToast, testCase?.name, toast]);
+
   // WebSocket connection for real-time updates
   useEffect(() => {
     const websocket = new WebSocket('ws://localhost:3001');
@@ -196,58 +274,20 @@ const TestCaseRunner = () => {
     return () => {
       websocket.close();
     };
-  }, []);
-  // Cleanup effect for polling interval
+  }, [handleAutomationUpdate]);
+  
+  // Cleanup effect for polling interval and execution timeout
   useEffect(() => {
     return () => {
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current);
         pollingIntervalRef.current = null;
       }
+      if (executionTimeout) {
+        clearTimeout(executionTimeout);
+      }
     };
-  }, []);
-
-  const handleAutomationUpdate = (update: any) => {
-    if (update.status === 'progress') {
-      setCurrentStep(update.step || 'Processing...');
-      setProgress(prev => Math.min(prev + 10, 90));
-    } else if (update.status === 'completed' || update.status === 'failed' || update.status === 'error') {
-      // Stop polling first
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-        pollingIntervalRef.current = null;
-        setPollingInterval(null);
-      }
-      
-      setIsRunning(false);
-      setProgress(100);
-      setCurrentStep(update.status === 'completed' ? 'Completed successfully!' : 'Automation failed');
-      
-      // Show completion toast only once per execution
-      if (!hasShownCompletionToast) {
-        setHasShownCompletionToast(true);
-        toast({
-          title: update.status === 'completed' ? "Test Passed" : "Test Failed",
-          description: `Test case "${testCase.name}" execution completed`,
-          variant: update.status === 'completed' ? "default" : "destructive"
-        });
-      }
-      
-      // Fetch final results using current execution ID
-      if (currentExecutionId) {
-        fetchExecutionStatus(currentExecutionId).then(() => {
-          // Auto-show report if test completed successfully
-          if (update.status === 'completed') {
-            setTimeout(() => {
-              const url = `http://localhost:3001/api/artifacts/${currentExecutionId}/report`;
-              setReportUrl(url);
-              setShowReport(true);
-            }, 500);
-          }
-        });
-      }
-    }
-  };
+  }, [executionTimeout]);
 
   const runAutomation = async () => {
     if (!task.trim()) return;
@@ -270,6 +310,29 @@ const TestCaseRunner = () => {
     setReportUrl(null);
     setCurrentExecutionId(null);
     setHasShownCompletionToast(false); // Reset completion toast flag
+    
+    // Set a timeout to automatically stop execution after 10 minutes
+    const timeout = setTimeout(() => {
+      console.log('Execution timeout reached, stopping automation');
+      setIsRunning(false);
+      setCurrentStep('Execution timeout - test took too long');
+      setProgress(100);
+      
+      // Clear polling if still running
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+        setPollingInterval(null);
+      }
+      
+      toast({
+        title: "Execution Timeout",
+        description: "Test execution took longer than expected and was stopped",
+        variant: "destructive"
+      });
+    }, 10 * 60 * 1000); // 10 minutes
+    
+    setExecutionTimeout(timeout);
 
     try {
       const response = await fetch('http://localhost:3001/api/automation/run', {
@@ -277,7 +340,6 @@ const TestCaseRunner = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           task: task.trim(), 
-          framework,
           testCaseId: testCase.id,
           storyId,
           options: { 
@@ -308,7 +370,7 @@ const TestCaseRunner = () => {
 
         toast({
           title: "Test Case Started",
-          description: `Running "${testCase.name}" with ${framework}`,
+          description: `Running "${testCase.name}" with dobb.ai`,
         });
       } else {
         setIsRunning(false);
@@ -356,30 +418,46 @@ const TestCaseRunner = () => {
         if (data.success) {
           setResult(data);
           
-          if (data.isComplete) {
-            // Clear polling interval
+          // Check for completion status more comprehensively
+          const isComplete = data.isComplete || 
+                           data.execution?.status === 'passed' || 
+                           data.execution?.status === 'failed' || 
+                           data.execution?.status === 'error' ||
+                           data.status === 'completed' ||
+                           data.status === 'failed' ||
+                           data.status === 'error';
+          
+          if (isComplete) {
+            // Clear polling interval immediately
             if (pollingIntervalRef.current) {
               clearInterval(pollingIntervalRef.current);
               pollingIntervalRef.current = null;
               setPollingInterval(null);
             }
             
+            // Clear execution timeout
+            if (executionTimeout) {
+              clearTimeout(executionTimeout);
+              setExecutionTimeout(null);
+            }
+            
+            // Update UI state immediately
             setIsRunning(false);
             setProgress(100);
-            setCurrentStep(data.execution.status === 'passed' ? 'Test completed successfully!' : 'Test failed');
+            setCurrentStep(data.execution?.status === 'passed' ? 'Test completed successfully!' : 'Test failed');
             
             // Show completion toast only if WebSocket didn't already show it
             if (!hasShownCompletionToast) {
               setHasShownCompletionToast(true);
               toast({
-                title: data.execution.status === 'passed' ? "Test Passed" : "Test Failed",
-                description: `Test case "${testCase.name}" execution completed`,
-                variant: data.execution.status === 'passed' ? "default" : "destructive"
+                title: data.execution?.status === 'passed' ? "Test Passed" : "Test Failed",
+                description: `Test case "${testCase?.name || 'Unknown'}" execution completed`,
+                variant: data.execution?.status === 'passed' ? "default" : "destructive"
               });
             }
             
             // Auto-show report if completed successfully
-            if (data.execution.status === 'passed') {
+            if (data.execution?.status === 'passed') {
               setTimeout(() => {
                 const url = `http://localhost:3001/api/artifacts/${executionId}/report`;
                 setReportUrl(url);
@@ -388,15 +466,24 @@ const TestCaseRunner = () => {
             }
             return;
           }
+        } else {
+          console.warn('Polling response not successful:', data);
         }
       } catch (error) {
         console.error('Polling error:', error);
-        // Stop polling on error
+        // Stop polling on error and reset state
         if (pollingIntervalRef.current) {
           clearInterval(pollingIntervalRef.current);
           pollingIntervalRef.current = null;
           setPollingInterval(null);
         }
+        setIsRunning(false);
+        setCurrentStep('Error occurred during polling');
+        toast({
+          title: "Polling Error",
+          description: "Failed to check test execution status",
+          variant: "destructive"
+        });
       }
     };
     
@@ -433,6 +520,12 @@ const TestCaseRunner = () => {
     if (pollingInterval) {
       clearInterval(pollingInterval);
       setPollingInterval(null);
+    }
+
+    // Clear execution timeout
+    if (executionTimeout) {
+      clearTimeout(executionTimeout);
+      setExecutionTimeout(null);
     }
 
     try {
@@ -754,37 +847,16 @@ const TestCaseRunner = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Configuration */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">
-                      Browser Framework:
-                    </label>
-                    <Select value={framework} onValueChange={(value) => setFramework(value as 'playwright' | 'puppeteer')} disabled={isRunning}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Choose framework" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="playwright">
-                          🎭 Playwright (Multi-browser)
-                        </SelectItem>
-                        <SelectItem value="puppeteer">
-                          🐶 Puppeteer (Chrome focus)
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="headless"
-                      checked={headless}
-                      onCheckedChange={setHeadless}
-                      disabled={isRunning}
-                    />
-                    <label htmlFor="headless" className="text-sm font-medium">
-                      Run in headless mode
-                    </label>
-                  </div>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="headless"
+                    checked={headless}
+                    onCheckedChange={setHeadless}
+                    disabled={isRunning}
+                  />
+                  <label htmlFor="headless" className="text-sm font-medium">
+                    Run in headless mode
+                  </label>
                 </div>
 
                 {/* Task Input */}
@@ -819,7 +891,7 @@ const TestCaseRunner = () => {
                     ) : (
                       <>
                         <Play className="mr-2 h-4 w-4" />
-                        Run Test with {framework === 'playwright' ? 'Playwright' : 'Puppeteer'}
+                        Run Test with dobb.ai
                       </>
                     )}
                   </Button>
@@ -859,7 +931,7 @@ const TestCaseRunner = () => {
                     </span>
                     <div className="flex items-center space-x-2">
                       <Badge variant="outline" className="text-xs">
-                        {result.framework}
+                        Playwright
                       </Badge>
                       <Badge className={`text-xs border ${getStatusColor(result.execution?.status || result.status)}`}>
                         {result.execution?.status || result.status}

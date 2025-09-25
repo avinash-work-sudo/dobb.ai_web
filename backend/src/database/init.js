@@ -37,7 +37,7 @@ async function createTables() {
       id TEXT PRIMARY KEY,
       test_name TEXT NOT NULL,
       task_description TEXT,
-      framework TEXT NOT NULL, -- 'playwright' or 'puppeteer'
+      framework TEXT NOT NULL DEFAULT 'playwright' -- 'playwright' only
       status TEXT NOT NULL CHECK (status IN ('running', 'passed', 'failed', 'error')),
       duration_ms INTEGER,
       started_at DATETIME,

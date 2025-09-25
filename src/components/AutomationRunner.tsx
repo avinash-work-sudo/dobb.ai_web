@@ -50,7 +50,7 @@ const EXAMPLE_TASKS = [
 
 export function AutomationRunner() {
   const [task, setTask] = useState('');
-  const [framework, setFramework] = useState<'playwright' | 'puppeteer'>('playwright');
+  const framework = 'playwright';
   const [headless, setHeadless] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
   const [result, setResult] = useState<AutomationResult | null>(null);
@@ -259,37 +259,16 @@ export function AutomationRunner() {
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Configuration */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">
-                Browser Framework:
-              </label>
-              <Select value={framework} onValueChange={(value) => setFramework(value as 'playwright' | 'puppeteer')} disabled={isRunning}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose framework" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="playwright">
-                    🎭 Playwright (Multi-browser)
-                  </SelectItem>
-                  <SelectItem value="puppeteer">
-                    🐶 Puppeteer (Chrome focus)
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="headless"
-                checked={headless}
-                onCheckedChange={setHeadless}
-                disabled={isRunning}
-              />
-              <label htmlFor="headless" className="text-sm font-medium">
-                Run in headless mode
-              </label>
-            </div>
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="headless"
+              checked={headless}
+              onCheckedChange={setHeadless}
+              disabled={isRunning}
+            />
+            <label htmlFor="headless" className="text-sm font-medium">
+              Run in headless mode
+            </label>
           </div>
 
           {/* Task Input */}
@@ -341,7 +320,7 @@ export function AutomationRunner() {
               ) : (
                 <>
                   <Play className="mr-2 h-4 w-4" />
-                  Run with {framework === 'playwright' ? 'Playwright' : 'Puppeteer'}
+                  Run with Playwright
                 </>
               )}
             </Button>
@@ -381,7 +360,7 @@ export function AutomationRunner() {
               </span>
               <div className="flex items-center space-x-2">
                 <Badge variant="outline" className="text-xs">
-                  {result.framework}
+                  Playwright
                 </Badge>
                 <Badge className={`text-xs border ${getStatusColor(result.status)}`}>
                   {result.status}

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🚀 Starting Weave & Know AI Test Automation..."
+echo "🚀 Starting dobb.ai AI Test Automation..."
 
 # Colors
 GREEN='\033[0;32m'

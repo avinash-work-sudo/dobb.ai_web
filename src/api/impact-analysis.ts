@@ -47,7 +47,7 @@ The system provides clear, correct error messages for invalid, expired, or ineli
 The orders table correctly records the applied coupon code and the final discount amount for each order.
 Backend validation via an Edge Function prevents the creation of orders with invalid discounts.`;
 
-const BACKEND_API_URL = 'http://localhost:8000';
+const BACKEND_API_URL = import.meta.env.VITE_BACKEND_API_URL;
 
 // Real API for impact analysis
 export const impactAnalysisAPI = {

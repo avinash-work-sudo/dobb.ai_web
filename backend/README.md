@@ -1,11 +1,11 @@
-# Weave & Know Backend - AI Test Automation API
+# dobb.ai Backend - AI Test Automation API
 
-A powerful backend service for AI-driven web automation using Midscene.js with Playwright and Puppeteer.
+A powerful backend service for AI-driven web automation using Midscene.js with Playwright.
 
 ## 🚀 Features
 
 - **Natural Language Automation**: Execute complex web tasks using plain English
-- **Multi-Framework Support**: Choose between Playwright and Puppeteer
+- **Playwright Framework**: Multi-browser support with advanced automation capabilities
 - **Real-time Updates**: WebSocket support for live automation progress
 - **Comprehensive Reporting**: Visual HTML reports with screenshots
 - **Test Result Storage**: SQLite database for persistent test data
@@ -16,7 +16,7 @@ A powerful backend service for AI-driven web automation using Midscene.js with P
 
 - Node.js 18+ 
 - npm or yarn
-- Chrome/Chromium browser (for Puppeteer)
+- Chrome/Chromium browser (for Playwright)
 - Firefox, Safari (optional, for Playwright)
 
 ## 🛠️ Installation
@@ -73,7 +73,7 @@ DATABASE_PATH=./database/test-results.db
 - `POST /api/automation/run` - Start automation
 - `GET /api/automation/status/:executionId` - Get execution status
 - `POST /api/automation/stop/:executionId` - Stop automation
-- `GET /api/automation/frameworks` - List available frameworks
+- `GET /api/automation/frameworks` - List available frameworks (Playwright only)
 
 ### Test Results
 
@@ -98,7 +98,7 @@ const response = await fetch('http://localhost:3001/api/automation/run', {
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
     task: "Navigate to Google, search for 'React testing', and click the first result",
-    framework: 'playwright',
+    framework: 'playwright', // Only Playwright is supported
     options: {
       headless: false,
       viewport: { width: 1280, height: 720 }
@@ -137,7 +137,7 @@ ws.send(JSON.stringify({
 }));
 ```
 
-## 🎭 Frameworks
+## 🎭 Framework
 
 ### Playwright
 - **Multi-browser**: Chrome, Firefox, Safari, Edge
@@ -145,12 +145,8 @@ ws.send(JSON.stringify({
 - **Network interception**: Mock APIs, control cache
 - **Auto-wait**: Automatic element waiting
 - **Better debugging**: Enhanced dev tools
-
-### Puppeteer  
-- **Chrome focus**: Optimized for Chromium
 - **PDF generation**: Native PDF support
 - **Performance profiling**: Chrome DevTools access
-- **Lightweight**: Smaller bundle size
 
 ## 📊 Natural Language Examples
 
@@ -212,7 +208,7 @@ Returns server status, version, and configuration info.
 
 ### Common Issues
 
-1. **Browser not found**: Ensure Chrome is installed for Puppeteer
+1. **Browser not found**: Ensure Chrome is installed for Playwright
 2. **Permission denied**: Check file permissions for artifacts directory
 3. **Port in use**: Change PORT in .env file
 4. **WebSocket connection failed**: Check firewall settings
@@ -223,8 +219,8 @@ Returns server status, version, and configuration info.
 # Install browsers for Playwright
 npx playwright install
 
-# Verify Puppeteer Chrome
-node -e "console.log(require('puppeteer').executablePath())"
+# Verify Playwright browsers
+npx playwright --version
 ```
 
 ## 📈 Performance Tips

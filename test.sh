@@ -52,7 +52,7 @@ else
 fi
 
 echo ""
-print_info "Step 3: Testing frameworks..."
+print_info "Step 3: Testing Playwright framework..."
 
 # Check if Playwright is available
 if cd backend && node -e "require('playwright')" 2>/dev/null; then
@@ -61,12 +61,7 @@ else
     print_warning "Playwright may need installation: cd backend && npx playwright install"
 fi
 
-# Check if Puppeteer is available  
-if cd backend && node -e "require('puppeteer')" 2>/dev/null; then
-    print_success "Puppeteer is installed"
-else
-    print_warning "Puppeteer installation may be incomplete"
-fi
+# Puppeteer is no longer supported - only Playwright is used
 
 cd ..
 

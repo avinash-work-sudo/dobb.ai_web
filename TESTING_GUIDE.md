@@ -92,12 +92,6 @@ Framework: Playwright
 Expected: Successfully navigates and clicks
 ```
 
-#### Puppeteer Test
-```bash
-Task: "Navigate to playwright.dev and click on 'Docs'"  
-Framework: Puppeteer
-Expected: Same result as Playwright
-```
 
 ### ✅ Error Handling Tests
 

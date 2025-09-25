@@ -1,6 +1,5 @@
 import express from 'express';
 import { PlaywrightAutomationService } from '../services/PlaywrightAutomationService.js';
-import { PuppeteerAutomationService } from '../services/PuppeteerAutomationService.js';
 import { TestResultStorage } from '../services/TestResultStorage.js';
 import { broadcastAutomationUpdate } from '../server.js';
 import { v4 as uuidv4 } from 'uuid';
@@ -14,7 +13,6 @@ router.post('/run', async (req, res) => {
   try {
     const {
       task,
-      framework = 'playwright',
       options = {},
       requirements = []
     } = req.body;
@@ -26,20 +24,11 @@ router.post('/run', async (req, res) => {
         executionId
       });
     }
-
-    if (!['playwright', 'puppeteer'].includes(framework)) {
-      return res.status(400).json({
-        error: 'Framework must be either "playwright" or "puppeteer"',
-        executionId
-      });
-    }
-
     // Create initial execution record
     await TestResultStorage.createExecution({
       id: executionId,
       testName: `Automation: ${task.substring(0, 50)}${task.length > 50 ? '...' : ''}`,
       taskDescription: task,
-      framework,
       status: 'running',
       startedAt: new Date(),
       browserInfo: JSON.stringify(options)
@@ -49,7 +38,7 @@ router.post('/run', async (req, res) => {
     broadcastAutomationUpdate(executionId, {
       status: 'started',
       task,
-      framework,
+      framework: 'playwright',
       timestamp: new Date().toISOString()
     });
 
@@ -58,14 +47,14 @@ router.post('/run', async (req, res) => {
       success: true,
       executionId,
       status: 'started',
-      framework,
+      framework: 'playwright',
       task,
       message: 'Automation started. Use WebSocket or polling to get updates.',
       statusUrl: `/api/automation/status/${executionId}`
     });
 
     // Run automation asynchronously
-    runAutomationAsync(executionId, task, framework, options, requirements);
+    runAutomationAsync(executionId, task, 'playwright', options, requirements);
 
   } catch (error) {
     console.error('Error starting automation:', error);
@@ -167,13 +156,6 @@ router.get('/frameworks', (req, res) => {
         description: 'Multi-browser support (Chrome, Firefox, Safari, Edge)',
         features: ['Multi-browser', 'Mobile testing', 'Network interception', 'Auto-wait'],
         recommended: true
-      },
-      {
-        name: 'puppeteer',
-        displayName: 'Puppeteer',
-        description: 'Chrome/Chromium focused with DevTools integration',
-        features: ['Chrome DevTools', 'PDF generation', 'Performance profiling', 'Lightweight'],
-        recommended: false
       }
     ],
     defaultOptions: {
@@ -190,12 +172,8 @@ async function runAutomationAsync(executionId, task, framework, options, require
   const startTime = Date.now();
 
   try {
-    // Choose automation service
-    const AutomationService = framework === 'playwright'
-      ? PlaywrightAutomationService
-      : PuppeteerAutomationService;
-
-    const service = new AutomationService();
+    // Use Playwright automation service
+    const service = new PlaywrightAutomationService();
 
     // Set the execution ID for proper file naming
     service.executionId = executionId;
