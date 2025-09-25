@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { MessageCircle, Send, X, Bot, User, Minimize2 } from "lucide-react";
+import { MessageCircle, Send, X, Bot, User, Minimize2, Zap, Clock } from "lucide-react";
 import { chatbotAPI } from "@/api/impact-analysis";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -88,21 +88,48 @@ const ChatBot = () => {
   const [hasNewMessage, setHasNewMessage] = useState(false);
   const [conversationId, setConversationId] = useState<string | undefined>(undefined);
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
+  const [instantMode, setInstantMode] = useState(false); // Toggle for instant vs streaming mode
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const streamingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    // Use requestAnimationFrame for better performance
+    requestAnimationFrame(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    });
   };
 
   const streamMessage = (messageId: string, fullText: string) => {
     setStreamingMessageId(messageId);
     let currentIndex = 0;
     
-    const streamNextChar = () => {
+    // Optimize streaming by processing multiple characters at once
+    const getChunkSize = (text: string, index: number) => {
+      // Process words at a time for better readability and speed
+      const remainingText = text.substring(index);
+      const nextSpaceIndex = remainingText.indexOf(' ');
+      const nextNewlineIndex = remainingText.indexOf('\n');
+      
+      // Find the nearest word boundary
+      let chunkEnd = Math.min(
+        nextSpaceIndex === -1 ? remainingText.length : nextSpaceIndex + 1,
+        nextNewlineIndex === -1 ? remainingText.length : nextNewlineIndex + 1
+      );
+      
+      // For very long words, limit chunk size to prevent UI freezing
+      if (chunkEnd > 20) {
+        chunkEnd = Math.min(20, remainingText.length);
+      }
+      
+      // Minimum chunk size of 1 to ensure progress
+      return Math.max(1, chunkEnd);
+    };
+    
+    const streamNextChunk = () => {
       if (currentIndex < fullText.length) {
-        const displayText = fullText.substring(0, currentIndex + 1);
+        const chunkSize = getChunkSize(fullText, currentIndex);
+        const displayText = fullText.substring(0, currentIndex + chunkSize);
         
         setMessages(prev => prev.map(msg => 
           msg.id === messageId 
@@ -110,8 +137,9 @@ const ChatBot = () => {
             : msg
         ));
         
-        currentIndex++;
-        streamingTimeoutRef.current = setTimeout(streamNextChar, 20 + Math.random() * 30); // Variable speed
+        currentIndex += chunkSize;
+        // Significantly reduced delay for faster streaming (5-15ms vs 20-50ms)
+        streamingTimeoutRef.current = setTimeout(streamNextChunk, 5 + Math.random() * 10);
       } else {
         // Streaming complete
         setMessages(prev => prev.map(msg => 
@@ -123,7 +151,7 @@ const ChatBot = () => {
       }
     };
     
-    streamNextChar();
+    streamNextChunk();
   };
 
   useEffect(() => {
@@ -174,21 +202,36 @@ const ChatBot = () => {
       }
 
       const botMessageId = (Date.now() + 1).toString();
-      const botResponse: Message = {
-        id: botMessageId,
-        text: "", // Start with empty text for streaming
-        sender: 'bot',
-        timestamp: new Date(),
-        streaming: true
-      };
       
-      // Add empty message first
-      setMessages(prev => [...prev, botResponse]);
-      
-      // Start streaming the response
-      setTimeout(() => {
-        streamMessage(botMessageId, response.response);
-      }, 500); // Small delay before streaming starts
+      if (instantMode) {
+        // Instant mode: display the full message immediately
+        const botResponse: Message = {
+          id: botMessageId,
+          text: response.response,
+          sender: 'bot',
+          timestamp: new Date(),
+          streaming: false
+        };
+        
+        setMessages(prev => [...prev, botResponse]);
+      } else {
+        // Streaming mode: stream the response
+        const botResponse: Message = {
+          id: botMessageId,
+          text: "", // Start with empty text for streaming
+          sender: 'bot',
+          timestamp: new Date(),
+          streaming: true
+        };
+        
+        // Add empty message first
+        setMessages(prev => [...prev, botResponse]);
+        
+        // Start streaming the response immediately for faster response
+        setTimeout(() => {
+          streamMessage(botMessageId, response.response);
+        }, 100); // Reduced delay for faster initial response
+      }
       
       if (!isOpen) {
         setHasNewMessage(true);
@@ -198,20 +241,36 @@ const ChatBot = () => {
       
       // Fallback response if API fails
       const errorMessageId = (Date.now() + 1).toString();
-      const errorResponse: Message = {
-        id: errorMessageId,
-        text: "",
-        sender: 'bot',
-        timestamp: new Date(),
-        streaming: true
-      };
+      const errorMessage = "I'm sorry, I'm having trouble connecting right now. Please try again later.";
       
-      setMessages(prev => [...prev, errorResponse]);
-      
-      // Stream the error message too
-      setTimeout(() => {
-        streamMessage(errorMessageId, "I'm sorry, I'm having trouble connecting right now. Please try again later.");
-      }, 300);
+      if (instantMode) {
+        // Instant mode: display error immediately
+        const errorResponse: Message = {
+          id: errorMessageId,
+          text: errorMessage,
+          sender: 'bot',
+          timestamp: new Date(),
+          streaming: false
+        };
+        
+        setMessages(prev => [...prev, errorResponse]);
+      } else {
+        // Streaming mode: stream the error message
+        const errorResponse: Message = {
+          id: errorMessageId,
+          text: "",
+          sender: 'bot',
+          timestamp: new Date(),
+          streaming: true
+        };
+        
+        setMessages(prev => [...prev, errorResponse]);
+        
+        // Stream the error message with reduced delay
+        setTimeout(() => {
+          streamMessage(errorMessageId, errorMessage);
+        }, 100);
+      }
       
       if (!isOpen) {
         setHasNewMessage(true);
@@ -400,9 +459,30 @@ const ChatBot = () => {
                 </Button>
               </div>
               <div className="flex items-center justify-between mt-2">
-                <p className="text-xs text-muted-foreground">
-                  Powered by DOBB.ai
-                </p>
+                <div className="flex items-center space-x-3">
+                  <p className="text-xs text-muted-foreground">
+                    Powered by DOBB.ai
+                  </p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setInstantMode(!instantMode)}
+                    className="h-6 px-2 text-xs hover:bg-surface-subtle"
+                    title={instantMode ? "Switch to streaming mode" : "Switch to instant mode"}
+                  >
+                    {instantMode ? (
+                      <>
+                        <Zap className="h-3 w-3 mr-1" />
+                        Instant
+                      </>
+                    ) : (
+                      <>
+                        <Clock className="h-3 w-3 mr-1" />
+                        Stream
+                      </>
+                    )}
+                  </Button>
+                </div>
                 <Badge variant="secondary" className="text-xs">
                   AI Assistant
                 </Badge>
