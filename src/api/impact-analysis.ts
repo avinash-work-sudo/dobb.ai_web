@@ -56,7 +56,8 @@ export const impactAnalysisAPI = {
     figmaLink?: string;
     transcriptLink?: string;
   }) {
-    const BACKEND_API_URL = 'http://localhost:8000';
+    const BACKEND_API_URL = import.meta.env.VITE_BACKEND_API_URL;
+
     
     try {
       const response = await fetch(`${BACKEND_API_URL}/report/generate`, {
@@ -95,7 +96,7 @@ export const userStoriesAPI = {
   async generateUserStories(data: {
     featureId: string;
   }) {
-    const BACKEND_API_URL = 'http://localhost:8000';
+    const BACKEND_API_URL = import.meta.env.VITE_BACKEND_API_URL;
     
     try {
       const response = await fetch(`${BACKEND_API_URL}/user_stories/generate`, {
