@@ -14,7 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
+import { toast, useToast } from '@/hooks/use-toast';
+import { url } from 'inspector';
 import {
   ArrowLeft,
   BarChart3,
@@ -88,8 +89,9 @@ const TestCaseRunner = () => {
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Convert test steps to automation task
-  const convertStepsToTask = (steps: string[], expectedResult: string) => {
-    return steps.join('. ') + '. ' + expectedResult;
+  const convertStepsToTask = (steps: string[], expectedResult?: string) => {
+    const numberedSteps = steps.map((step, index) => `Step ${index + 1}: ${step}.`);
+    return numberedSteps.join(`\n`) + (expectedResult ? `\n\nExpected Result: ${expectedResult}` : '');
   };
 
   // Fetch test case data from database
@@ -195,7 +197,6 @@ const TestCaseRunner = () => {
       websocket.close();
     };
   }, []);
-
   // Cleanup effect for polling interval
   useEffect(() => {
     return () => {
@@ -349,7 +350,7 @@ const TestCaseRunner = () => {
 
     const poll = async () => {
       try {
-        const response = await fetch(`http://localhost:3001/api/automation/status/${executionId}`);
+        const response = await fetch(`${import.meta.env.VITE_AUTOMATION_API_URL || 'http://localhost:3001'}/api/automation/status/${executionId}`);
         const data = await response.json();
         
         if (data.success) {
@@ -410,7 +411,7 @@ const TestCaseRunner = () => {
 
   const fetchExecutionStatus = async (executionId: string): Promise<void> => {
     try {
-      const response = await fetch(`http://localhost:3001/api/automation/status/${executionId}`);
+      const response = await fetch(`${import.meta.env.VITE_AUTOMATION_API_URL || 'http://localhost:3001'}/api/automation/status/${executionId}`);
       const data = await response.json();
       
       if (data.success) {
@@ -435,7 +436,7 @@ const TestCaseRunner = () => {
     }
 
     try {
-      await fetch(`http://localhost:3001/api/automation/stop/${currentExecutionId}`, {
+      await fetch(`${import.meta.env.VITE_AUTOMATION_API_URL || 'http://localhost:3001'}/api/automation/stop/${currentExecutionId}`, {
         method: 'POST'
       });
       

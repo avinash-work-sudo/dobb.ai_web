@@ -111,7 +111,7 @@ export function AutomationRunner() {
     setCurrentStep('Starting automation...');
 
     try {
-      const response = await fetch('http://localhost:3001/api/automation/run', {
+      const response = await fetch(`${import.meta.env.VITE_AUTOMATION_API_URL || 'http://localhost:3001'}/api/automation/run`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -163,7 +163,7 @@ export function AutomationRunner() {
   const pollExecutionStatus = async (executionId: string) => {
     const poll = async () => {
       try {
-        const response = await fetch(`http://localhost:3001/api/automation/status/${executionId}`);
+        const response = await fetch(`${import.meta.env.VITE_AUTOMATION_API_URL || 'http://localhost:3001'}/api/automation/status/${executionId}`);
         const data = await response.json();
         
         if (data.success) {
@@ -191,7 +191,7 @@ export function AutomationRunner() {
 
   const fetchExecutionStatus = async (executionId: string) => {
     try {
-      const response = await fetch(`http://localhost:3001/api/automation/status/${executionId}`);
+      const response = await fetch(`${import.meta.env.VITE_AUTOMATION_API_URL || 'http://localhost:3001'}/api/automation/status/${executionId}`);
       const data = await response.json();
       
       if (data.success) {
@@ -206,7 +206,7 @@ export function AutomationRunner() {
     if (!result?.executionId) return;
 
     try {
-      await fetch(`http://localhost:3001/api/automation/stop/${result.executionId}`, {
+      await fetch(`${import.meta.env.VITE_AUTOMATION_API_URL || 'http://localhost:3001'}/api/automation/stop/${result.executionId}`, {
         method: 'POST'
       });
       
