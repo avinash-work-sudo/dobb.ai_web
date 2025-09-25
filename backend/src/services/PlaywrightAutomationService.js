@@ -1,5 +1,5 @@
 import { PlaywrightAgent } from '@midscene/web/playwright';
-import { mkdir, readFile, readdir, stat, writeFile } from 'fs/promises';
+import { mkdir, readFile, readdir, rename, stat, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { chromium, firefox, webkit } from 'playwright';
 import { v4 as uuidv4 } from 'uuid';
@@ -589,6 +589,7 @@ export class PlaywrightAutomationService {
 
     let updatedFiles = 0;
     const visited = new Set();
+    const renameCandidates = [];
 
     for (const dir of candidateDirs) {
       if (visited.has(dir)) {
@@ -614,6 +615,14 @@ export class PlaywrightAutomationService {
           content = await readFile(filePath, 'utf-8');
         } catch {
           continue;
+        }
+
+        if (
+          this.executionId &&
+          fileName.startsWith('playwright-') &&
+          !fileName.startsWith('playwright-report_')
+        ) {
+          renameCandidates.push({ dir, fileName, filePath });
         }
 
         let modified = false;
@@ -651,6 +660,49 @@ export class PlaywrightAutomationService {
       console.log(
         `🎨 Applied DOBB.ai branding to ${updatedFiles} report${updatedFiles === 1 ? '' : 's'}.`
       );
+    }
+
+    if (this.executionId && renameCandidates.length > 0) {
+      try {
+        const candidatesWithStats = [];
+
+        for (const candidate of renameCandidates) {
+          try {
+            const stats = await stat(candidate.filePath);
+            candidatesWithStats.push({ ...candidate, mtimeMs: stats.mtimeMs });
+          } catch {
+            continue;
+          }
+        }
+
+        if (candidatesWithStats.length > 0) {
+          candidatesWithStats.sort((a, b) => b.mtimeMs - a.mtimeMs);
+          const latest = candidatesWithStats[0];
+          const desiredName = `playwright-report_${this.executionId}.html`;
+          const desiredPath = join(latest.dir, desiredName);
+
+          if (latest.filePath !== desiredPath) {
+            let targetExists = false;
+            try {
+              await stat(desiredPath);
+              targetExists = true;
+            } catch {
+              targetExists = false;
+            }
+
+            if (targetExists) {
+              console.warn(
+                `Desired Playwright report filename already exists: ${desiredName}. Skipping rename.`
+              );
+            } else {
+              await rename(latest.filePath, desiredPath);
+              console.log(`📝 Renamed Midscene report to ${desiredName}`);
+            }
+          }
+        }
+      } catch (renameError) {
+        console.warn('Skipping Midscene report renaming:', renameError.message);
+      }
     }
   }
 

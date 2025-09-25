@@ -1,5 +1,5 @@
 import express from 'express';
-import { readFile, readdir, stat } from 'fs/promises';
+import { readFile, stat } from 'fs/promises';
 import { extname, join } from 'path';
 import { TestResultStorage } from '../services/TestResultStorage.js';
 
@@ -25,50 +25,6 @@ router.get('/:executionId/debug', async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
-  }
-});
-
-// GET /api/artifacts/:executionId/report
-router.get('/:executionId/report', async (req, res) => {
-  try {
-    const { executionId } = req.params;
-
-    console.log(`🔍 Searching for report artifact for executionId: ${executionId}`);
-    const artifacts = await TestResultStorage.getExecutionArtifacts(executionId);
-    console.log(`📋 Found ${artifacts.length} artifacts for execution ${executionId}`);
-    console.log(`🗂️ Artifact types: ${artifacts.map(a => a.artifact_type).join(', ')}`);
-
-    const reportArtifact = artifacts.find(a => a.artifact_type === 'html_report');
-    console.log(`📄 Report artifact found: ${reportArtifact ? 'YES' : 'NO'}`);
-
-    if (!reportArtifact) {
-      console.log(
-        '❌ No report artifact found. Available artifacts:',
-        artifacts.map(a => `${a.artifact_type}@${a.file_path}`)
-      );
-      return res.status(404).json({
-        error: 'HTML report not found',
-        executionId,
-        availableArtifacts: artifacts.map(a => a.artifact_type)
-      });
-    }
-
-    const reportContent = await readFile(reportArtifact.file_path, 'utf8');
-
-    res.set({
-      'Content-Type': 'text/html',
-      'Cache-Control': 'public, max-age=3600',
-      'X-Frame-Options': 'SAMEORIGIN',
-      'Content-Security-Policy': "frame-ancestors 'self' http://localhost:* https://localhost:*"
-    });
-
-    res.send(reportContent);
-  } catch (error) {
-    console.error('Error serving report:', error);
-    res.status(500).json({
-      error: error.message,
-      executionId: req.params.executionId
-    });
   }
 });
 
@@ -197,27 +153,9 @@ router.get('/:executionId/report', async (req, res) => {
     const { executionId } = req.params;
 
     console.log(`🔍 Searching for report artifact for executionId: ${executionId}`);
-    // const artifacts = await TestResultStorage.getExecutionArtifacts(executionId);
-    // console.log(`📋 Found ${artifacts.length} artifacts for execution ${executionId}`);
-    // console.log(`🗂️ Artifact types: ${artifacts.map(a => a.artifact_type).join(', ')}`);
-
-    // const reportArtifact = artifacts.find(a => a.artifact_type === 'html_report');
-    // console.log(`📄 Report artifact found: ${reportArtifact ? 'YES' : 'NO'}`);
-    // get file from backend/artifacts/reports/report_${executionId}.html
     const reportPath = join(process.env.ARTIFACTS_PATH, 'reports', `report_${executionId}.html`);
     console.log(`📄 Report path: ${reportPath}`);
     const reportContentLocal = await readFile(reportPath, 'utf8');
-
-    // if (!reportArtifact) {
-    //   console.log(`❌ No report artifact found. Available artifacts:`, artifacts.map(a => `${a.artifact_type}@${a.file_path}`));
-    //   return res.status(404).json({
-    //     error: 'HTML report not found',
-    //     executionId,
-    //     availableArtifacts: artifacts.map(a => a.artifact_type)
-    //   });
-    // }
-
-    // const reportContent = await readFile(reportArtifact.file_path, 'utf8');
 
     res.set({
       'Content-Type': 'text/html',
@@ -239,64 +177,90 @@ router.get('/:executionId/report', async (req, res) => {
 // GET /api/artifacts/:executionId/playwright-report
 router.get('/:executionId/playwright-report', async (req, res) => {
   try {
+    // const { executionId } = req.params;
+    // console.log(`🎭 Searching for Playwright report for executionId: ${executionId}`);
+    // // const midsceneDir = process.env.MIDSCENE_RUN_DIR || 'midscene_run';
+    // // const candidateDirs = [
+    // //   join(process.cwd(), midsceneDir, 'report'),
+    // //   join(process.cwd(), 'backend', midsceneDir, 'report')
+    // // ];
+    // const reportPath = join(
+    //   process.env.MIDSCENE_RUN_DIR,
+    //   'report',
+    //   `playwright-report_${executionId}.html`
+    // );
+    // const visited = new Set();
+    // let resolvedPath = null;
+    // let reportContent = null;
+    // for (const rawDir of candidateDirs) {
+    //   const dir = join(rawDir); // normalise
+    //   if (visited.has(dir)) {
+    //     continue;
+    //   }
+    //   visited.add(dir);
+    //   const candidatePath = join(dir, `playwright-report_${executionId}.html`);
+    //   console.log(`📄 Checking Playwright report path: ${candidatePath}`);
+    //   try {
+    //     reportContent = await readFile(candidatePath, 'utf8');
+    //     resolvedPath = candidatePath;
+    //     break;
+    //   } catch (fileError) {
+    //     console.warn(`❌ Playwright report file not found at ${candidatePath}`);
+    //   }
+    // }
+    // if (reportContent) {
+    //   res.set({
+    //     'Content-Type': 'text/html',
+    //     'Cache-Control': 'public, max-age=3600',
+    //     'X-Frame-Options': 'SAMEORIGIN',
+    //     'Content-Security-Policy': "frame-ancestors 'self' http://localhost:* https://localhost:*"
+    //   });
+    //   console.log(`✅ Serving Playwright report from ${resolvedPath}`);
+    //   return res.send(reportContent);
+    // }
+    // const allFiles = new Set();
+    // for (const rawDir of visited) {
+    //   try {
+    //     const files = await readdir(rawDir);
+    //     files
+    //       .filter(file => file.startsWith('playwright') && file.endsWith('.html'))
+    //       .forEach(file => allFiles.add(join(rawDir, file)));
+    //   } catch (dirError) {
+    //     console.warn(`⚠️ Unable to list directory ${rawDir}: ${dirError.message}`);
+    //   }
+    // }
+    // return res.status(404).json({
+    //   error: 'Playwright report not found',
+    //   executionId,
+    //   searchedPaths: Array.from(visited).map(dir =>
+    //     join(dir, `playwright-report_${executionId}.html`)
+    //   ),
+    //   availableFiles: Array.from(allFiles),
+    //   suggestion:
+    //     allFiles.size > 0
+    //       ? 'Playwright report may have been generated with a different naming convention. Check available files.'
+    //       : 'No Playwright reports found in searched directories.'
+    // });
+
     const { executionId } = req.params;
 
-    console.log(`🎭 Searching for Playwright report for executionId: ${executionId}`);
-
-    // Construct path to playwright report in midscene_run directory
-    const midsceneDir = process.env.MIDSCENE_RUN_DIR || 'midscene_run';
-    const playwrightReportPath = join(
-      process.cwd(),
-      midsceneDir,
+    console.log(`🔍 Searching for report artifact for executionId: ${executionId}`);
+    const reportPath = join(
+      process.env.MIDSCENE_RUN_DIR || './midscene_run',
       'report',
       `playwright-report_${executionId}.html`
     );
+    console.log(`📄 Report path: ${reportPath}`);
+    const reportContentLocal = await readFile(reportPath, 'utf8');
 
-    console.log(`📄 Playwright report path: ${playwrightReportPath}`);
+    res.set({
+      'Content-Type': 'text/html',
+      'Cache-Control': 'public, max-age=3600',
+      'X-Frame-Options': 'SAMEORIGIN',
+      'Content-Security-Policy': "frame-ancestors 'self' http://localhost:* https://localhost:*"
+    });
 
-    try {
-      const playwrightReportContent = await readFile(playwrightReportPath, 'utf8');
-
-      res.set({
-        'Content-Type': 'text/html',
-        'Cache-Control': 'public, max-age=3600',
-        'X-Frame-Options': 'SAMEORIGIN',
-        'Content-Security-Policy': "frame-ancestors 'self' http://localhost:* https://localhost:*"
-      });
-
-      res.send(playwrightReportContent);
-    } catch (fileError) {
-      console.warn(`❌ Playwright report file not found at ${playwrightReportPath}`);
-
-      // Try to find any playwright report files in the directory
-      try {
-        const reportDir = join(process.cwd(), midsceneDir, 'report');
-        const files = await readdir(reportDir);
-        const playwrightFiles = files.filter(
-          file => file.startsWith('playwright') && file.endsWith('.html')
-        );
-
-        console.log(`📁 Available Playwright files: ${playwrightFiles.join(', ')}`);
-
-        return res.status(404).json({
-          error: 'Playwright report not found',
-          executionId,
-          expectedPath: playwrightReportPath,
-          availableFiles: playwrightFiles,
-          suggestion:
-            playwrightFiles.length > 0
-              ? 'Playwright report may have been generated with datetime naming. Check available files.'
-              : 'No Playwright reports found in directory.'
-        });
-      } catch (dirError) {
-        return res.status(404).json({
-          error: 'Playwright report directory not accessible',
-          executionId,
-          path: playwrightReportPath,
-          details: dirError.message
-        });
-      }
-    }
+    res.send(reportContentLocal);
   } catch (error) {
     console.error('Error serving Playwright report:', error);
     res.status(500).json({
