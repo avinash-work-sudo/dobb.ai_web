@@ -8,7 +8,7 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Dark mode colors */
+    /* Dark mode colors - Purple/Amber theme */
     --background: 222 15% 7%;
     --foreground: 210 40% 95%;
 
@@ -18,7 +18,7 @@ All colors MUST be HSL.
     --popover: 222 15% 10%;
     --popover-foreground: 210 40% 95%;
 
-    --primary: 221 83% 53%;
+    --primary: 270 100% 70%;
     --primary-foreground: 210 40% 98%;
 
     --secondary: 217 32% 17%;
@@ -27,20 +27,20 @@ All colors MUST be HSL.
     --muted: 217 32% 17%;
     --muted-foreground: 215 20% 65%;
 
-    --accent: 221 83% 53%;
+    --accent: 45 100% 70%;
     --accent-foreground: 210 40% 98%;
 
     --destructive: 0 63% 31%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217 32% 17%;
+    --border: 270 100% 70% / 0.3;
     --input: 217 32% 17%;
-    --ring: 221 83% 53%;
+    --ring: 270 100% 70%;
 
-    /* Custom design tokens for dark mode */
-    --gradient-primary: linear-gradient(135deg, hsl(221 83% 53%) 0%, hsl(221 83% 63%) 100%);
+    /* Custom design tokens for purple/amber theme */
+    --gradient-primary: linear-gradient(135deg, hsl(270 100% 70%) 0%, hsl(45 100% 70%) 100%);
     --gradient-secondary: linear-gradient(135deg, hsl(217 32% 17%) 0%, hsl(222 15% 10%) 100%);
-    --shadow-elegant: 0 4px 16px -4px hsl(221 83% 53% / 0.3);
+    --shadow-elegant: 0 4px 16px -4px hsl(270 100% 70% / 0.3);
     --shadow-soft: 0 2px 8px -2px hsl(0 0% 0% / 0.2);
     
     --surface-elevated: 222 15% 10%;
@@ -50,12 +50,12 @@ All colors MUST be HSL.
 
     --sidebar-background: 222 15% 7%;
     --sidebar-foreground: 210 40% 95%;
-    --sidebar-primary: 221 83% 53%;
+    --sidebar-primary: 270 100% 70%;
     --sidebar-primary-foreground: 210 40% 98%;
     --sidebar-accent: 217 32% 17%;
     --sidebar-accent-foreground: 210 40% 95%;
-    --sidebar-border: 217 32% 17%;
-    --sidebar-ring: 221 83% 53%;
+    --sidebar-border: 270 100% 70% / 0.3;
+    --sidebar-ring: 270 100% 70%;
   }
 
 }
@@ -67,5 +67,42 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  /* Custom gradient utilities for the purple/amber theme */
+  .bg-gradient-radial {
+    background: radial-gradient(ellipse at center, var(--tw-gradient-stops));
+  }
+  
+  .bg-gradient-mystical {
+    background: linear-gradient(135deg, hsl(222 15% 7%) 0%, hsl(270 100% 20%) 50%, hsl(222 15% 7%) 100%);
+  }
+  
+  .text-gradient-purple-amber {
+    background: linear-gradient(135deg, hsl(270 100% 70%) 0%, hsl(45 100% 70%) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .text-gradient-white-purple {
+    background: linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(270 100% 70%) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .border-gradient-purple {
+    border-image: linear-gradient(135deg, hsl(270 100% 70%) 0%, hsl(45 100% 70%) 100%) 1;
+  }
+  
+  .shadow-purple-glow {
+    box-shadow: 0 0 20px hsl(270 100% 70% / 0.3);
+  }
+  
+  .shadow-amber-glow {
+    box-shadow: 0 0 20px hsl(45 100% 70% / 0.3);
   }
 }

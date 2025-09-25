@@ -165,9 +165,28 @@ const Features = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 text-white relative overflow-hidden">
+      {/* Background Effects */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Mystical grid pattern */}
+        <div 
+          className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage: `
+              linear-gradient(rgba(147, 51, 234, 0.3) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(147, 51, 234, 0.3) 1px, transparent 1px)
+            `,
+            backgroundSize: '60px 60px'
+          }}
+        />
+        
+        {/* Floating orbs */}
+        <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-gradient-to-br from-purple-600/30 to-amber-500/20 rounded-full blur-2xl animate-pulse" />
+        <div className="absolute bottom-1/3 right-1/4 w-24 h-24 bg-gradient-to-br from-amber-500/30 to-purple-600/20 rounded-full blur-xl animate-pulse" style={{animationDelay: '2s'}} />
+      </div>
+
       {/* Top Bar */}
-      <header className="border-b border-border bg-surface-elevated">
+      <header className="relative z-10 border-b border-purple-500/30 bg-gradient-to-r from-slate-900/90 to-purple-950/90 backdrop-blur-sm">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -175,34 +194,34 @@ const Features = () => {
                 variant="ghost" 
                 size="icon" 
                 onClick={() => navigate('/homepage')}
-                className="hover:bg-surface-subtle"
+                className="text-purple-200 hover:text-white hover:bg-purple-500/20"
               >
-                <ArrowLeft className="h-5 w-5 text-muted-foreground" />
+                <ArrowLeft className="h-5 w-5" />
               </Button>
-              <div className="p-2 rounded-lg shadow-elegant">
-                <img src="/head.png" alt="DOBB.ai" className="size-10" />
+              <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-amber-500 rounded-lg flex items-center justify-center">
+                <img src="/head.png" alt="DOBB.ai" className="w-5 h-5 rounded" />
               </div>
-              <h1 className="text-xl font-bold text-foreground">DOBB.ai</h1>
+              <h1 className="text-xl font-bold bg-gradient-to-r from-purple-300 to-amber-300 bg-clip-text text-transparent">DOBB.ai</h1>
             </div>
             
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="icon" className="hover:bg-surface-subtle">
-                <Settings className="h-5 w-5 text-muted-foreground" />
+              <Button variant="ghost" size="icon" className="text-purple-200 hover:text-white hover:bg-purple-500/20">
+                <Settings className="h-5 w-5" />
               </Button>
-              <Button variant="ghost" size="icon" className="hover:bg-surface-subtle">
-                <User className="h-5 w-5 text-muted-foreground" />
+              <Button variant="ghost" size="icon" className="text-purple-200 hover:text-white hover:bg-purple-500/20">
+                <User className="h-5 w-5" />
               </Button>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-6 py-8">
+      <main className="relative z-10 container mx-auto px-6 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-white via-purple-200 to-amber-200 bg-clip-text text-transparent mb-2">
             Analyzed Features
           </h1>
-          <p className="text-lg text-muted-foreground">
+          <p className="text-lg text-purple-200">
             Review and manage all your analyzed project features and their impact assessments
           </p>
         </div>
@@ -215,10 +234,10 @@ const Features = () => {
               placeholder="Search features..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-surface-subtle border-border"
+              className="pl-10 bg-purple-900/20 border-purple-500/30 text-white placeholder:text-purple-300"
             />
           </div>
-          <Button variant="outline" className="border-border hover:bg-surface-subtle">
+          <Button variant="outline" className="border-purple-400/30 text-purple-200 hover:bg-purple-500/20">
             <Filter className="h-4 w-4 mr-2" />
             Filter
           </Button>
@@ -228,7 +247,7 @@ const Features = () => {
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {Array.from({ length: 6 }).map((_, index) => (
-              <Card key={index} className="bg-surface-elevated border border-border">
+              <Card key={index} className="bg-gradient-to-br from-purple-900/30 to-slate-900/30 border-purple-500/30 backdrop-blur-sm">
                 <CardHeader className="pb-4">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center space-x-2">
@@ -257,7 +276,7 @@ const Features = () => {
             {filteredFeatures.map((feature) => (
             <Card 
               key={feature.id} 
-              className="bg-surface-elevated border border-border hover:shadow-elegant transition-all duration-300 cursor-pointer"
+              className="bg-gradient-to-br from-purple-900/30 to-slate-900/30 border-purple-500/30 backdrop-blur-sm hover:bg-purple-900/40 hover:shadow-purple-glow transition-all duration-300 cursor-pointer group"
               onClick={() => navigate(`/feature/${feature.id}`)}
             >
               <CardHeader className="pb-4">
@@ -277,42 +296,42 @@ const Features = () => {
                     </Badge>
                   </div>
                 </div>
-                <CardTitle className="text-lg font-semibold text-foreground line-clamp-2">
+                <CardTitle className="text-lg font-semibold text-white line-clamp-2">
                   {feature.title}
                 </CardTitle>
               </CardHeader>
               
               <CardContent>
-                <CardDescription className="text-muted-foreground mb-4 line-clamp-3">
+                <CardDescription className="text-purple-200 mb-4 line-clamp-3">
                   {feature.description}
                 </CardDescription>
                 
                 <div className="space-y-3">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Impact Score</span>
+                    <span className="text-purple-200">Impact Score</span>
                     <div className="flex items-center space-x-2">
                       <div className="w-16 bg-surface-subtle rounded-full h-2">
                         <div 
-                          className="bg-gradient-primary h-2 rounded-full transition-all duration-300"
+                          className="bg-gradient-to-r from-purple-600 to-amber-600 h-2 rounded-full transition-all duration-300"
                           style={{ width: `${feature.impactScore}%` }}
                         />
                       </div>
-                      <span className="text-foreground font-medium">{feature.impactScore}</span>
+                      <span className="text-white font-medium">{feature.impactScore}</span>
                     </div>
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div className="flex items-center space-x-2">
                       <Users className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">{feature.teamSize} devs</span>
+                      <span className="text-purple-200">{feature.teamSize} devs</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <Clock className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">{feature.estimatedHours}h</span>
+                      <span className="text-purple-200">{feature.estimatedHours}h</span>
                     </div>
                   </div>
                   
-                  <div className="text-xs text-muted-foreground pt-2 border-t border-border">
+                  <div className="text-xs text-purple-300 pt-2 border-t border-purple-500/30">
                     Last analyzed: {new Date(feature.lastAnalyzed).toLocaleDateString()}
                   </div>
                 </div>
@@ -324,11 +343,11 @@ const Features = () => {
 
         {!loading && filteredFeatures.length === 0 && (
           <div className="text-center py-12">
-            <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-foreground mb-2">
+            <TrendingUp className="h-12 w-12 text-purple-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-white mb-2">
               No features found
             </h3>
-            <p className="text-muted-foreground">
+            <p className="text-purple-200">
               {searchQuery ? "Try adjusting your search query" : "Start by analyzing your first feature"}
             </p>
           </div>

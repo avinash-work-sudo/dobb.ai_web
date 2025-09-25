@@ -201,26 +201,45 @@ const Onboarding = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 text-white relative overflow-hidden">
+      {/* Background Effects */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Mystical grid pattern */}
+        <div 
+          className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage: `
+              linear-gradient(rgba(147, 51, 234, 0.3) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(147, 51, 234, 0.3) 1px, transparent 1px)
+            `,
+            backgroundSize: '60px 60px'
+          }}
+        />
+        
+        {/* Floating orbs */}
+        <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-gradient-to-br from-purple-600/30 to-amber-500/20 rounded-full blur-2xl animate-pulse" />
+        <div className="absolute bottom-1/3 right-1/4 w-24 h-24 bg-gradient-to-br from-amber-500/30 to-purple-600/20 rounded-full blur-xl animate-pulse" style={{animationDelay: '2s'}} />
+      </div>
+
       {/* Header */}
-      <header className="border-b border-border bg-surface-elevated">
+      <header className="relative z-10 border-b border-purple-500/30 bg-gradient-to-r from-slate-900/90 to-purple-950/90 backdrop-blur-sm">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center space-x-3">
-              <div className="p-2 rounded-lg shadow-elegant">
-                <img src="/head.png" alt="DOBB.ai" className="size-10" />
-              </div>
-            <h1 className="text-xl font-bold text-foreground">DOBB.ai</h1>
+            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-amber-500 rounded-lg flex items-center justify-center">
+              <img src="/head.png" alt="DOBB.ai" className="w-5 h-5 rounded" />
+            </div>
+            <h1 className="text-xl font-bold bg-gradient-to-r from-purple-300 to-amber-300 bg-clip-text text-transparent">DOBB.ai</h1>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-6 py-12">
+      <main className="relative z-10 container mx-auto px-6 py-12">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-foreground mb-4">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-purple-200 to-amber-200 bg-clip-text text-transparent mb-4">
               Connect Your Project Accounts
             </h1>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-lg text-purple-200 max-w-2xl mx-auto">
               Connect your development tools to enable comprehensive impact analysis and automated insights across your project ecosystem
             </p>
           </div>
@@ -230,19 +249,19 @@ const Onboarding = () => {
               const accountConnected = isConnected(account.id);
               
               return (
-                <Card key={account.id} className="relative bg-surface-elevated border border-border hover:shadow-elegant transition-all duration-300">
+                <Card key={account.id} className="relative bg-gradient-to-br from-purple-900/30 to-slate-900/30 border-purple-500/30 backdrop-blur-sm hover:bg-purple-900/40 transition-all duration-300 group">
                   <CardHeader className="pb-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
-                        <div className={`p-2 rounded-lg ${accountConnected ? 'bg-green-500/20' : 'bg-gradient-primary'}`}>
+                        <div className={`p-2 rounded-lg ${accountConnected ? 'bg-blue-500/20' : 'bg-gradient-to-br from-purple-500 to-amber-500'}`}>
                           {accountConnected ? (
-                            <CheckCircle2 className="h-6 w-6 text-green-500" />
+                            <CheckCircle2 className="h-6 w-6 text-blue-500" />
                           ) : (
                             <div className="text-white">{account.icon}</div>
                           )}
                         </div>
                         <div>
-                          <CardTitle className="text-lg font-semibold text-foreground">
+                          <CardTitle className="text-lg font-semibold text-white">
                             {account.name}
                           </CardTitle>
                           {account.required && (
@@ -256,7 +275,7 @@ const Onboarding = () => {
                   </CardHeader>
                   
                   <CardContent>
-                    <CardDescription className="text-muted-foreground mb-4">
+                    <CardDescription className="text-purple-200 mb-4">
                       {account.description}
                     </CardDescription>
                     
@@ -265,8 +284,8 @@ const Onboarding = () => {
                       disabled={isLoading}
                       className={`w-full ${
                         accountConnected 
-                          ? 'bg-green-500 hover:bg-green-600 text-white' 
-                          : 'bg-gradient-primary text-white hover:opacity-90'
+                          ? 'bg-blue-500 hover:bg-blue-600 text-white' 
+                          : 'bg-gradient-to-r from-purple-600 to-amber-600 hover:from-purple-700 hover:to-amber-700 text-white'
                       } transition-all duration-300`}
                     >
                       {isLoading ? (
@@ -287,7 +306,7 @@ const Onboarding = () => {
           </div>
 
           <div className="text-center">
-            <div className="bg-surface-elevated border border-border rounded-lg p-6 mb-8">
+            <div className="bg-gradient-to-br from-purple-900/30 to-slate-900/30 border border-purple-500/30 backdrop-blur-sm rounded-lg p-6 mb-8">
               <div className="flex items-center justify-center space-x-4 mb-4">
                 <div className="flex space-x-2">
                   {accounts.filter(acc => acc.required).map((account) => (
@@ -295,13 +314,13 @@ const Onboarding = () => {
                       key={account.id}
                       className={`w-3 h-3 rounded-full ${
                         isConnected(account.id)
-                          ? 'bg-green-500'
+                          ? 'bg-blue-500'
                           : 'bg-muted'
                       }`}
                     />
                   ))}
                 </div>
-                <span className="text-sm text-muted-foreground">
+                <span className="text-sm text-purple-200">
                   {connectedAccounts.filter(id => accounts.find(acc => acc.id === id)?.required).length} of {accounts.filter(acc => acc.required).length} required connections
                 </span>
               </div>
@@ -310,14 +329,14 @@ const Onboarding = () => {
                 onClick={handleContinue}
                 disabled={!canProceed}
                 size="lg"
-                className="bg-gradient-primary text-white hover:opacity-90 transition-all duration-300 shadow-elegant"
+                className="bg-gradient-to-r from-purple-600 to-amber-600 hover:from-purple-700 hover:to-amber-700 text-white transition-all duration-300 shadow-2xl shadow-purple-500/25"
               >
                 Continue to Dashboard
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
               
               {!canProceed && (
-                <p className="text-sm text-muted-foreground mt-3">
+                <p className="text-sm text-purple-200 mt-3">
                   Please connect all required accounts to continue
                 </p>
               )}
@@ -328,7 +347,7 @@ const Onboarding = () => {
 
       {/* GitHub Connection Modal */}
       <Dialog open={isGitHubModalOpen} onOpenChange={setIsGitHubModalOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] bg-gradient-to-br from-slate-900 to-purple-950 border-purple-500/30 text-white">
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2">
               <Github className="h-5 w-5" />
@@ -407,7 +426,7 @@ const Onboarding = () => {
             <Button variant="outline" onClick={handleGitHubModalClose}>
               Cancel
             </Button>
-            <Button onClick={handleGitHubSubmit} className="bg-gradient-primary text-white hover:opacity-90">
+            <Button onClick={handleGitHubSubmit} className="bg-gradient-to-r from-purple-600 to-amber-600 hover:from-purple-700 hover:to-amber-700 text-white">
               Connect GitHub
             </Button>
           </DialogFooter>
@@ -416,7 +435,7 @@ const Onboarding = () => {
 
       {/* Figma Connection Modal */}
       <Dialog open={isFigmaModalOpen} onOpenChange={setIsFigmaModalOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] bg-gradient-to-br from-slate-900 to-purple-950 border-purple-500/30 text-white">
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2">
               <Figma className="h-5 w-5" />
@@ -485,7 +504,7 @@ const Onboarding = () => {
             <Button variant="outline" onClick={handleFigmaModalClose}>
               Cancel
             </Button>
-            <Button onClick={handleFigmaSubmit} className="bg-gradient-primary text-white hover:opacity-90">
+            <Button onClick={handleFigmaSubmit} className="bg-gradient-to-r from-purple-600 to-amber-600 hover:from-purple-700 hover:to-amber-700 text-white">
               Connect Figma
             </Button>
           </DialogFooter>
@@ -494,7 +513,7 @@ const Onboarding = () => {
 
       {/* Atlassian Connection Modal */}
       <Dialog open={isAtlassianModalOpen} onOpenChange={setIsAtlassianModalOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] bg-gradient-to-br from-slate-900 to-purple-950 border-purple-500/30 text-white">
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2">
               <Settings className="h-5 w-5" />
@@ -577,7 +596,7 @@ const Onboarding = () => {
             <Button variant="outline" onClick={handleAtlassianModalClose}>
               Cancel
             </Button>
-            <Button onClick={handleAtlassianSubmit} className="bg-gradient-primary text-white hover:opacity-90">
+            <Button onClick={handleAtlassianSubmit} className="bg-gradient-to-r from-purple-600 to-amber-600 hover:from-purple-700 hover:to-amber-700 text-white">
               Connect Atlassian
             </Button>
           </DialogFooter>

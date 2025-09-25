@@ -113,7 +113,7 @@ const TestCaseRunner = () => {
 
   // Convert test steps to automation task
   const convertStepsToTask = (steps: string[], expectedResult?: string) => {
-    const numberedSteps = steps.map((step, index) => `Step ${index + 1}: ${step}.`);
+    const numberedSteps = steps.map((step, index) => `Step ${index + 1}: ${step}`);
     return numberedSteps.join(`\n`) + (expectedResult ? `\n\nExpected Result: ${expectedResult}` : '');
   };
 
