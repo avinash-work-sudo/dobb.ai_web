@@ -33,6 +33,7 @@ import {
   RefreshCw,
   Settings,
   Square,
+  TestTube,
   User,
   XCircle
 } from 'lucide-react';

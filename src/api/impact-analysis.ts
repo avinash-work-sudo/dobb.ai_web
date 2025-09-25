@@ -47,6 +47,8 @@ The system provides clear, correct error messages for invalid, expired, or ineli
 The orders table correctly records the applied coupon code and the final discount amount for each order.
 Backend validation via an Edge Function prevents the creation of orders with invalid discounts.`;
 
+const BACKEND_API_URL = 'http://localhost:8000';
+
 // Real API for impact analysis
 export const impactAnalysisAPI = {
   async startAnalysis(data: {
@@ -56,8 +58,7 @@ export const impactAnalysisAPI = {
     figmaLink?: string;
     transcriptLink?: string;
   }) {
-    const BACKEND_API_URL = import.meta.env.VITE_BACKEND_API_URL;
-
+   
     
     try {
       const response = await fetch(`${BACKEND_API_URL}/report/generate`, {
@@ -96,7 +97,7 @@ export const userStoriesAPI = {
   async generateUserStories(data: {
     featureId: string;
   }) {
-    const BACKEND_API_URL = import.meta.env.VITE_BACKEND_API_URL;
+    
     
     try {
       const response = await fetch(`${BACKEND_API_URL}/user_stories/generate`, {
@@ -146,6 +147,58 @@ export const userStoriesAPI = {
     } catch (error) {
       console.error('User stories API error:', error);
       throw new Error(`Failed to generate user stories: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+};
+
+// API for chatbot
+export const chatbotAPI = {
+  async sendMessage(data: {
+    message: string;
+    conversationId?: string;
+  }) {
+    
+    
+    try {
+      const response = await fetch(`${BACKEND_API_URL}/chatbot`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: data.message,
+          conversation_id: data.conversationId || null
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      // Expected API response structure:
+      // {
+      //   reply: string,
+      //   conversation_id?: string
+      // }
+      
+      return {
+        success: true,
+        response: result.reply || result.response || result.message || "I'm here to help!",
+        conversationId: result.conversation_id || result.conversationId,
+        message: 'Message sent successfully'
+      };
+    } catch (error) {
+      console.error('Chatbot API error:', error);
+      
+      // Return a fallback response instead of throwing
+      return {
+        success: false,
+        response: "I'm sorry, I'm having trouble connecting right now. Please try again later.",
+        conversationId: data.conversationId,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
     }
   }
 };
