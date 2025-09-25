@@ -37,6 +37,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ExecutionStep {
   stepNumber: number;
@@ -78,39 +79,93 @@ const TestCaseRunner = () => {
   const [currentExecutionId, setCurrentExecutionId] = useState<string | null>(null);
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
   const [hasShownCompletionToast, setHasShownCompletionToast] = useState(false);
+  const [testCase, setTestCase] = useState<any>(null);
+  const [isLoadingTestCase, setIsLoadingTestCase] = useState(true);
+  const [userStory, setUserStory] = useState<any>(null);
   
   // Use ref for polling interval to avoid closure issues
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Mock test case data - in real app, this would be fetched based on testCaseId
-  const testCase = {
-    id: parseInt(testCaseId || '1'),
-    name: "Successful User Registration with Valid Email",
-    status: "not_executed",
-    description: "Verify that a user can successfully register with a valid email address and strong password",
-    steps: [
-      "Navigate to registration page",
-      "Enter valid email address (test@example.com)",
-      "Enter strong password (minimum 8 characters, uppercase, lowercase, number, symbol)",
-      "Confirm password matches",
-      "Click 'Register' button",
-      "Verify success message is displayed",
-      "Check that verification email is sent"
-    ],
-    expectedResult: "User account is created and verification email is sent",
-    priority: "High"
-  };
-
   // Convert test steps to automation task
-  const convertStepsToTask = (steps: string[]) => {
-    return steps.join('. ') + '. ' + testCase.expectedResult;
+  const convertStepsToTask = (steps: string[], expectedResult: string) => {
+    return steps.join('. ') + '. ' + expectedResult;
   };
 
-  // Initialize with test case steps
+  // Fetch test case data from database
   useEffect(() => {
-    const automationTask = convertStepsToTask(testCase.steps);
-    setTask(automationTask);
-  }, [testCaseId]);
+    let isMounted = true;
+
+    const fetchTestCaseData = async () => {
+      if (!testCaseId || !storyId) return;
+
+      try {
+        // Fetch test case from database
+        const { data: testCaseData, error: testCaseError } = await supabase
+          .from('test_cases')
+          .select('*')
+          .eq('id', testCaseId)
+          .single();
+
+        if (testCaseError) {
+          console.error('Error fetching test case:', testCaseError);
+          toast({
+            title: "Error",
+            description: "Failed to load test case data",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Fetch user story data for additional context
+        const { data: storyData, error: storyError } = await supabase
+          .from('user_stories')
+          .select('*')
+          .eq('id', storyId)
+          .single();
+
+        if (storyError) {
+          console.error('Error fetching user story:', storyError);
+        }
+
+        if (!isMounted) return;
+
+        // Transform data for UI
+        const transformedTestCase = {
+          id: testCaseData.id,
+          name: testCaseData.name,
+          status: testCaseData.status || "not_executed",
+          description: testCaseData.description,
+          steps: testCaseData.steps || [],
+          expectedResult: testCaseData.expected_result || "",
+          priority: testCaseData.priority?.charAt(0).toUpperCase() + testCaseData.priority?.slice(1) || "Medium"
+        };
+
+        setTestCase(transformedTestCase);
+        setUserStory(storyData);
+
+        // Initialize automation task with test case steps
+        if (transformedTestCase.steps.length > 0) {
+          const automationTask = convertStepsToTask(transformedTestCase.steps, transformedTestCase.expectedResult);
+          setTask(automationTask);
+        }
+
+      } catch (error) {
+        console.error('Error fetching test case data:', error);
+        if (isMounted) {
+          toast({
+            title: "Error",
+            description: "Failed to load test case data",
+            variant: "destructive",
+          });
+        }
+      } finally {
+        if (isMounted) setIsLoadingTestCase(false);
+      }
+    };
+
+    fetchTestCaseData();
+    return () => { isMounted = false; };
+  }, [testCaseId, storyId, toast]);
 
   // WebSocket connection for real-time updates
   useEffect(() => {
@@ -456,6 +511,90 @@ const TestCaseRunner = () => {
     }
   };
 
+  // Show loading state while fetching test case data
+  if (isLoadingTestCase) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="border-b border-border bg-surface-elevated">
+          <div className="container mx-auto px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => navigate(`/feature/${id}/stories/${storyId}`)}
+                  className="hover:bg-surface-subtle"
+                >
+                  <ArrowLeft className="h-5 w-5 text-muted-foreground" />
+                </Button>
+                <div className="bg-gradient-primary p-2 rounded-lg shadow-elegant">
+                  <TestTube className="h-6 w-6 text-white" />
+                </div>
+                <h1 className="text-xl font-bold text-foreground">Test Case Runner</h1>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main className="container mx-auto px-6 py-8">
+          <div className="max-w-4xl mx-auto">
+            <Card className="bg-surface-elevated border border-border">
+              <CardContent className="pt-6">
+                <div className="text-center py-12">
+                  <Loader2 className="h-16 w-16 text-primary mx-auto animate-spin mb-6" />
+                  <h3 className="text-xl font-semibold text-foreground mb-4">
+                    Loading Test Case
+                  </h3>
+                  <p className="text-muted-foreground">
+                    Fetching test case details...
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Show error state if test case not found
+  if (!testCase) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="border-b border-border bg-surface-elevated">
+          <div className="container mx-auto px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => navigate(`/feature/${id}/stories/${storyId}`)}
+                  className="hover:bg-surface-subtle"
+                >
+                  <ArrowLeft className="h-5 w-5 text-muted-foreground" />
+                </Button>
+                <div className="bg-gradient-primary p-2 rounded-lg shadow-elegant">
+                  <TestTube className="h-6 w-6 text-white" />
+                </div>
+                <h1 className="text-xl font-bold text-foreground">Test Case Runner</h1>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main className="container mx-auto px-6 py-8">
+          <div className="max-w-4xl mx-auto text-center">
+            <h1 className="text-2xl font-bold text-foreground mb-4">Test Case Not Found</h1>
+            <p className="text-muted-foreground mb-6">The requested test case could not be found.</p>
+            <Button onClick={() => navigate(`/feature/${id}/stories/${storyId}`)}>
+              Back to User Story
+            </Button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {/* Top Bar */}
@@ -519,7 +658,7 @@ const TestCaseRunner = () => {
                     onClick={() => navigate(`/feature/${id}`)}
                     className="cursor-pointer"
                   >
-                    User Authentication System
+                    Feature Analysis
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
@@ -537,7 +676,7 @@ const TestCaseRunner = () => {
                     onClick={() => navigate(`/feature/${id}/stories/${storyId}`)}
                     className="cursor-pointer"
                   >
-                    User Registration
+                    {userStory?.title || "User Story"}
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
@@ -913,3 +1052,4 @@ const TestCaseRunner = () => {
 };
 
 export default TestCaseRunner;
+

@@ -1,4 +1,53 @@
-// Mock API for impact analysis
+// Sample PRD text for API calls
+const SAMPLE_PRD_TEXT = `Phase 4 – Coupons & Discounts
+1. Overview & Objective
+This document describes the requirements for Phase 4, which introduces a comprehensive discount and coupon system. The objective is to simulate real-world e-commerce promotions by allowing for product-level discounts and the application of coupon codes at checkout. This will enhance the platform's commercial capabilities and provide a more dynamic pricing structure.
+2. Features & Scope
+2.1. In Scope
+Product-Level Discounts:
+Ability to define a discount for an individual product.
+Supports both fixed amounts (e.g., ₹100 off) and percentage (e.g., 10% off) discounts.
+On the product detail page and in the cart, the original price should be shown (e.g., struck through) alongside the new, discounted price.
+Coupon Code System:
+Users can enter a coupon code in a dedicated input field during the checkout process.
+The system will validate the coupon against a coupons table in Supabase.
+Validation logic will check if the coupon is valid, not expired, and if the cart meets the minimum order requirement.
+Cart & Checkout Integration:
+The cart summary will be updated to show:
+Subtotal (pre-discount total).
+Discount Applied (line item showing the amount saved from the coupon).
+Final Total.
+Only one coupon can be active at a time. Applying a new coupon will replace the existing one.
+Users must have the option to remove an applied coupon.
+User Feedback:
+Provide clear, real-time feedback messages to the user upon coupon entry:
+"Coupon applied successfully!"
+"Error: This coupon is invalid or expired."
+"Error: Your order must be at least ₹[amount] to use this coupon."
+2.2. Out of Scope
+Stacking multiple coupons.
+Automatic, campaign-based discounts (e.g., "Summer Sale - 15% off all items").
+User-specific or one-time-use coupons.
+"Buy One, Get One" (BOGO) or other complex promotion types.
+3. Technical Requirements
+Tech Stack: React, Supabase (PostgreSQL Database, Edge Functions).
+Data Flow and Logic:
+Security: Coupon validation and final price calculation must be performed on the backend to prevent client-side manipulation. A Supabase Edge Function is the ideal tool for this. The client will send the cart contents and coupon code to the function, which will validate it against the database and return the final, trustworthy total.
+Discount Priority: The system will apply discounts in the following order:
+Product-level discounts are calculated first to determine the item's price in the cart.
+The cart subtotal is calculated based on these potentially discounted prices.
+The coupon discount is then applied to this subtotal.
+4. Non-Functional Requirements
+Performance: Coupon validation should be near-instantaneous to provide a smooth user experience at checkout.
+Accuracy: All calculations involving discounts and totals must be precise to avoid pricing errors.
+5. Success Criteria
+Product-level discounts are correctly displayed and reflected in the cart's subtotal.
+Users can apply a valid coupon, and the cart total updates accurately in real-time.
+The system provides clear, correct error messages for invalid, expired, or ineligible coupons.
+The orders table correctly records the applied coupon code and the final discount amount for each order.
+Backend validation via an Edge Function prevents the creation of orders with invalid discounts.`;
+
+// Real API for impact analysis
 export const impactAnalysisAPI = {
   async startAnalysis(data: {
     featureId: string;
@@ -7,119 +56,95 @@ export const impactAnalysisAPI = {
     figmaLink?: string;
     transcriptLink?: string;
   }) {
-    // Simulate API delay for processing
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    const BACKEND_API_URL = 'http://localhost:8000';
     
-    // Mock comprehensive impact analysis result
-    const mockImpactAnalysis = {
-      summary: "The User Authentication System is a critical infrastructure component that requires careful implementation across multiple application layers. The analysis reveals significant dependencies on the database layer, API gateway, and frontend components. This feature introduces moderate complexity with high business value and requires coordination between backend and frontend teams.",
-      refined_prd: `# Enhanced User Authentication System
-
-## Overview
-This document outlines the requirements for implementing a comprehensive user authentication system that includes registration, login, password reset, and session management capabilities.
-
-## Features
-1. **User Registration**
-   - Email/username validation
-   - Password strength requirements
-   - Email verification process
-   - Terms of service acceptance
-
-2. **User Login**
-   - Multi-factor authentication support
-   - Remember me functionality
-   - Account lockout after failed attempts
-   - Social login integration (Google, GitHub)
-
-3. **Password Management**
-   - Secure password reset via email
-   - Password history tracking
-   - Password expiration policies
-   - Account recovery options
-
-## Technical Requirements
-- JWT token-based authentication
-- HTTPS encryption for all auth endpoints
-- Rate limiting on authentication attempts
-- Audit logging for security events
-
-## Success Metrics
-- 99.9% authentication uptime
-- < 500ms average response time
-- Zero security incidents
-- 95% user satisfaction score`,
-      impactScore: {
-        totalImpactScore: 8.5,
-        riskLevel: "Medium",
-        estimatedEffort: "3-4 weeks",
-        confidence: 0.85
-      },
-      impactedModules: [
-        {
-          name: "User Authentication",
-          impact: "High",
-          description: "Changes required to user login flow and session management",
-          effort: "1 week"
+    try {
+      const response = await fetch(`${BACKEND_API_URL}/report/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        {
-          name: "Payment Processing",
-          impact: "Medium", 
-          description: "Updates needed for payment validation and error handling",
-          effort: "3 days"
-        },
-        {
-          name: "Data Analytics",
-          impact: "Low",
-          description: "Minor updates to tracking events",
-          effort: "1 day"
-        }
-      ],
-      technicalImpacts: [
-        {
-          category: "Database",
-          changes: ["New user_preferences table", "Index optimization on user_sessions"],
-          complexity: "Medium"
-        },
-        {
-          category: "API",
-          changes: ["3 new endpoints", "2 modified endpoints", "Updated authentication middleware"],
-          complexity: "High"
-        },
-        {
-          category: "Frontend",
-          changes: ["New settings page", "Updated login component", "Enhanced error handling"],
-          complexity: "Medium"
-        }
-      ],
-      identifiedGaps: [
-        {
-          type: "Security",
-          description: "Need to implement rate limiting for new API endpoints",
-          priority: "High",
-          recommendation: "Add Redis-based rate limiting before deployment"
-        },
-        {
-          type: "Testing",
-          description: "Missing integration tests for payment flow",
-          priority: "Medium", 
-          recommendation: "Create comprehensive test suite for payment processing"
-        },
-        {
-          type: "Documentation",
-          description: "API documentation needs updates",
-          priority: "Low",
-          recommendation: "Update OpenAPI specs and add code examples"
-        }
-      ]
-    };
+        body: JSON.stringify({
+          prd_text: SAMPLE_PRD_TEXT
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      // Return in the expected format for compatibility with existing code
+      return {
+        success: true,
+        analysisId: `analysis_${Date.now()}`,
+        status: 'completed',
+        impactAnalysis: result,
+        message: 'Impact analysis completed successfully'
+      };
+    } catch (error) {
+      console.error('Impact analysis API error:', error);
+      throw new Error(`Failed to analyze feature: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+};
+
+// API for user stories generation
+export const userStoriesAPI = {
+  async generateUserStories(data: {
+    featureId: string;
+  }) {
+    const BACKEND_API_URL = 'http://localhost:8000';
     
-    // Mock successful response
-    return {
-      success: true,
-      analysisId: `analysis_${Date.now()}`,
-      status: 'completed',
-      impactAnalysis: mockImpactAnalysis,
-      message: 'Impact analysis completed successfully'
-    };
+    try {
+      const response = await fetch(`${BACKEND_API_URL}/user_stories/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prd_text: SAMPLE_PRD_TEXT
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      // Expected API response structure should match dummy stories format:
+      // [
+      //   {
+      //     title: string,
+      //     description: string,
+      //     acceptance_criteria: string[],
+      //     priority: "high" | "medium" | "low",
+      //     estimated_hours: number,
+      //     status: "draft" | "in_progress" | "completed",
+      //     test_cases: [
+      //       {
+      //         name: string,
+      //         description: string,
+      //         steps: string[],
+      //         expected_result: string,
+      //         priority: "high" | "medium" | "low"
+      //       }
+      //     ]
+      //   }
+      // ]
+      
+      // Return in the expected format for compatibility with existing code
+      // API returns the array directly, not wrapped in user_stories property
+      return {
+        success: true,
+        userStories: result, // result is already the array of user stories
+        message: 'User stories generated successfully'
+      };
+    } catch (error) {
+      console.error('User stories API error:', error);
+      throw new Error(`Failed to generate user stories: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 };
