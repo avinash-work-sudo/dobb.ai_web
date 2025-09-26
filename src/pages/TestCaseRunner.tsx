@@ -10,12 +10,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { toast, useToast } from '@/hooks/use-toast';
-import { url } from 'inspector';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import {
   ArrowLeft,
   BarChart3,
@@ -39,7 +38,6 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 
 interface ExecutionStep {
   stepNumber: number;
@@ -113,7 +111,7 @@ const TestCaseRunner = () => {
 
   // Convert test steps to automation task
   const convertStepsToTask = (steps: string[], expectedResult?: string) => {
-    const numberedSteps = steps.map((step, index) => `Step ${index + 1}: ${step}.`);
+    const numberedSteps = steps.map((step, index) => `Step ${index + 1}: ${step} \n`);
     return numberedSteps.join(`\n`) + (expectedResult ? `\n\nExpected Result: ${expectedResult}` : '');
   };
 

@@ -391,9 +391,9 @@ export class PlaywrightAutomationService {
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎭 Playwright Automation Report</h1>
+            <h1> dobb.ai Automation Report</h1>
             <p><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
-            <p><strong>Framework:</strong> Playwright</p>
+            <!-- <p><strong>Framework:</strong> Playwright</p> -->
         </div>
 
         <div class="stats">
