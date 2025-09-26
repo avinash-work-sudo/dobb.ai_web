@@ -375,8 +375,8 @@ const StoryDetail = () => {
                 >
                   <ArrowLeft className="h-5 w-5 text-muted-foreground" />
                 </Button>
-                <div className="bg-gradient-primary p-2 rounded-lg shadow-elegant">
-                  <BarChart3 className="h-6 w-6 text-white" />
+                <div className="p-2 rounded-lg shadow-elegant">
+                  <img src="/head.png" alt="dobb.ai" className="size-10" />
                 </div>
                 <h1 className="text-xl font-bold text-foreground">dobb.ai</h1>
               </div>
@@ -421,8 +421,8 @@ const StoryDetail = () => {
                 >
                   <ArrowLeft className="h-5 w-5 text-muted-foreground" />
                 </Button>
-                <div className="bg-gradient-primary p-2 rounded-lg shadow-elegant">
-                  <BarChart3 className="h-6 w-6 text-white" />
+                <div className="p-2 rounded-lg shadow-elegant">
+                  <img src="/head.png" alt="dobb.ai" className="size-10" />
                 </div>
                 <h1 className="text-xl font-bold text-foreground">dobb.ai</h1>
               </div>
