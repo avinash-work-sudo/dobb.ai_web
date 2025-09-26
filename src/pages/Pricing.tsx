@@ -1,7 +1,5 @@
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, X } from "lucide-react";
+import { GradientCard } from "@/components/ui/gradient-card";
+import { Check, X, Users, Zap, Shield, Crown } from "lucide-react";
 
 const Pricing = () => {
   const plans = [
@@ -9,89 +7,81 @@ const Pricing = () => {
       name: "Free Plan",
       price: "Free",
       description: "Perfect for getting started",
-      features: {
-        users: "Up to 5",
-        fileUpload: true,
-        impactAnalysis: "Limited",
-        userStories: "Basic",
-        qaAutomation: false,
-        selfHealingTests: false,
-        knowledgeTransfer: false,
-        dedicatedSupport: false,
-        customIntegrations: false,
-      }
+      features: [
+        "Up to 5 users",
+        "File upload & organization",
+        "Limited impact analysis",
+        "Basic user stories"
+      ],
+      missingFeatures: [
+        "QA automation",
+        "Self-healing tests",
+        "Dedicated support",
+        // "Custom integrations",
+        // "Priority feature requests",
+        // "SLA guarantees",
+        // "On-premise deployment",
+      ],
+      isPopular: false,
+      buttonText: "Get Started Free",
+      icon: <Users className="w-5 h-5" />
     },
     {
       name: "Starter",
-      price: "$49/user/month",
+      price: "$49",
+      subtitle: "per user per month",
       description: "For growing teams",
-      features: {
-        users: "Unlimited",
-        fileUpload: true,
-        impactAnalysis: true,
-        userStories: true,
-        qaAutomation: false,
-        selfHealingTests: false,
-        knowledgeTransfer: false,
-        dedicatedSupport: false,
-        customIntegrations: false,
-      }
+      features: [
+        "Everything in Free",
+        "Unlimited users",
+        "Full impact analysis",
+        "Advanced user stories",
+        "QA automation"
+      ],
+      missingFeatures: [
+        "Self-healing tests",
+      ],
+      isPopular: true,
+      buttonText: "Start Free Trial",
+      icon: <Zap className="w-5 h-5" />
     },
     {
       name: "Pro",
-      price: "$149/user/month",
+      price: "$149",
+      subtitle: "per user per month",
       description: "For advanced teams",
-      features: {
-        users: "Unlimited",
-        fileUpload: true,
-        impactAnalysis: true,
-        userStories: true,
-        qaAutomation: true,
-        selfHealingTests: true,
-        knowledgeTransfer: true,
-        dedicatedSupport: false,
-        customIntegrations: false,
-      }
+      features: [
+        "Everything in Starter",
+        "Self-healing tests",
+        "Knowledge transfer"
+      ],
+      missingFeatures: [
+        "Dedicated support",
+        "Custom integrations",
+        "Priority feature requests",
+      ],
+      isPopular: false,
+      buttonText: "Start Free Trial",
+      icon: <Shield className="w-5 h-5" />
     },
     {
       name: "Enterprise",
       price: "Custom",
       description: "For large organizations",
-      features: {
-        users: "Unlimited",
-        fileUpload: true,
-        impactAnalysis: true,
-        userStories: true,
-        qaAutomation: true,
-        selfHealingTests: true,
-        knowledgeTransfer: true,
-        dedicatedSupport: true,
-        customIntegrations: true,
-      }
+      features: [
+        "Everything in Pro",
+        "Dedicated support",
+        "Custom integrations",
+        "Priority feature requests",
+        "SLA guarantees",
+        "On-premise deployment"
+      ],
+      isPopular: false,
+      buttonText: "Contact Sales",
+      icon: <Crown className="w-5 h-5" />
     }
   ];
 
-  const features = [
-    { key: "users", label: "Users" },
-    { key: "fileUpload", label: "File Upload & Organization" },
-    { key: "impactAnalysis", label: "Impact Analysis" },
-    { key: "userStories", label: "User Stories Generation" },
-    { key: "qaAutomation", label: "QA Automation" },
-    { key: "selfHealingTests", label: "Self-healing Tests" },
-    { key: "knowledgeTransfer", label: "Knowledge Transfer" },
-    { key: "dedicatedSupport", label: "Dedicated Support" },
-    { key: "customIntegrations", label: "Custom Integrations" },
-  ];
-
-  const renderFeatureValue = (value: boolean | string) => {
-    if (value === true) {
-      return <Check className="h-5 w-5 text-blue-500" />;
-    } else if (value === false) {
-      return <X className="h-5 w-5 text-gray-300" />;
-    } else {
-      return <span className="text-sm text-purple-200">{value}</span>;
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 text-white relative overflow-hidden">
@@ -119,9 +109,9 @@ const Pricing = () => {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-amber-500 rounded-lg flex items-center justify-center">
-              <img src="/head.png" alt="DOBB.ai" className="w-5 h-5 rounded" />
+              <img src="/head.png" alt="dobb.ai" className="w-5 h-5 rounded" />
             </div>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-purple-300 to-amber-300 bg-clip-text text-transparent">DOBB.ai</h1>
+            <h1 className="text-xl font-bold bg-gradient-to-r from-purple-300 to-amber-300 bg-clip-text text-transparent">dobb.ai</h1>
           </div>
         </div>
       </header>
@@ -138,70 +128,25 @@ const Pricing = () => {
             </p>
           </div>
 
-          {/* Pricing Table */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-purple-500/30 p-8 relative overflow-hidden">
-            {/* Money Tree Background */}
-            <div className="absolute inset-0 opacity-5 pointer-events-none">
-              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                {/* Simplified money tree representation */}
-                <div className="text-8xl text-green-400">💰</div>
-                <div className="text-6xl text-yellow-400 mt-4">🌳</div>
-                <div className="text-4xl text-yellow-300 mt-2">🪙🪙🪙</div>
-              </div>
-            </div>
-
-            <div className="relative z-10">
-              {/* Table Header */}
-              <div className="grid grid-cols-5 gap-4 mb-6">
-                <div className="text-left">
-                  <h3 className="text-lg font-semibold text-white">Features</h3>
-                </div>
-                {plans.map((plan) => (
-                  <div key={plan.name} className="text-center">
-                    <h3 className="text-lg font-semibold text-white mb-1">{plan.name}</h3>
-                    <p className="text-sm text-purple-200 mb-2">({plan.price})</p>
-                    <p className="text-xs text-purple-300">{plan.description}</p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Table Rows */}
-              <div className="space-y-4">
-                {features.map((feature) => (
-                  <div key={feature.key} className="grid grid-cols-5 gap-4 items-center py-3 border-b border-purple-500/20 last:border-b-0">
-                    <div className="text-left">
-                      <span className="text-white font-medium">{feature.label}</span>
-                    </div>
-                    {plans.map((plan) => (
-                      <div key={`${plan.name}-${feature.key}`} className="flex justify-center items-center">
-                        {renderFeatureValue(plan.features[feature.key as keyof typeof plan.features])}
-                      </div>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </div>
+          {/* Pricing Cards */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {plans.map((plan, index) => (
+              <GradientCard
+                key={plan.name}
+                plan={plan}
+                variant="pricing"
+                buttonAction={() => {
+                  // Handle button click actions
+                  console.log(`Clicked on ${plan.name}`);
+                }}
+              />
+            ))}
           </div>
 
-          {/* Call to Action */}
+          {/* Additional Info */}
           <div className="text-center mt-12">
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Button 
-                size="lg" 
-                className="bg-gradient-to-r from-purple-600 to-amber-600 hover:from-purple-700 hover:to-amber-700 text-white transition-all duration-300 shadow-2xl shadow-purple-500/25"
-              >
-                Start Free Trial
-              </Button>
-              <Button 
-                variant="outline" 
-                size="lg"
-                className="border-purple-500/30 text-purple-200 hover:bg-purple-500/10"
-              >
-                Contact Sales
-              </Button>
-            </div>
-            <p className="text-sm text-purple-300 mt-4">
-              No credit card required • Cancel anytime • 14-day free trial
+            <p className="text-sm text-purple-300">
+              No credit card required for Free plan • Cancel anytime • 14-day free trial for paid plans
             </p>
           </div>
         </div>

@@ -170,9 +170,9 @@ const Features = () => {
                 <ArrowLeft className="h-5 w-5 text-white" />
               </Button>
               <div className="p-2 rounded-lg shadow-elegant">
-                <img src="/head.png" alt="DOBB.ai" className="size-10" />
+                <img src="/head.png" alt="dobb.ai" className="size-10" />
               </div>
-              <h1 className="text-xl font-bold text-white">DOBB.ai</h1>
+              <h1 className="text-xl font-bold text-white">dobb.ai</h1>
             </div>
             
             <div className="flex items-center space-x-4">

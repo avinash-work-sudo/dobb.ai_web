@@ -780,7 +780,7 @@ const TestCaseRunner = () => {
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-amber-500 rounded-lg flex items-center justify-center">
-                <img src="/head.png" alt="DOBB.ai" className="w-5 h-5 rounded" />
+                <img src="/head.png" alt="dobb.ai" className="w-5 h-5 rounded" />
               </div>
               <h1 className="text-xl font-bold bg-gradient-to-r from-purple-300 to-amber-300 bg-clip-text text-transparent">Test Case Runner</h1>
             </div>
@@ -1005,7 +1005,7 @@ const TestCaseRunner = () => {
                     </span>
                     <div className="flex items-center space-x-2">
                       <Badge variant="outline" className="text-xs">
-                        Playwright
+                        dobb.ai
                       </Badge>
                       <Badge className={`text-xs border ${getStatusColor(result.execution?.status || result.status)}`}>
                         {result.execution?.status || result.status}
@@ -1090,7 +1090,7 @@ const TestCaseRunner = () => {
                           onClick={() => window.open(`http://localhost:3001/api/artifacts/${currentExecutionId}/report/playwright`, '_blank')}
                         >
                           <ExternalLink className="mr-2 h-4 w-4" />
-                          Playwright Trace
+                          dobb.ai Trace
                         </Button>
                       )}
 
@@ -1131,7 +1131,7 @@ const TestCaseRunner = () => {
                         </div>
                         <div className="border border-purple-500/30 rounded-lg overflow-hidden">
                           <iframe
-                            src={'../backend/artifacts/reports/report_1758735090797.html'}
+                            src={`http://localhost:3001/api/artifacts/${currentExecutionId}/report/playwright`}
                             className="w-full h-96 border-0"
                             title="Test Execution Report"
                             sandbox="allow-scripts allow-same-origin"

@@ -418,8 +418,8 @@ export class PlaywrightAutomationService {
         <div class="steps">
             <h2 style="margin: 0; padding: 20px; background: #f9fafb; border-bottom: 1px solid #e5e7eb;">Execution Steps</h2>
             ${this.steps
-              .map(
-                step => `
+    .map(
+      step => `
                 <div class="step">
                     <div class="step-status ${step.success ? 'step-success' : 'step-error'}">
                         ${step.stepNumber}
@@ -434,14 +434,14 @@ export class PlaywrightAutomationService {
                         </div>
                     </div>
                     ${
-                      step.screenshotPath
-                        ? `<img src="${step.screenshotPath}" class="screenshot" alt="Step ${step.stepNumber} screenshot">`
-                        : ''
-                    }
+  step.screenshotPath
+    ? `<img src="${step.screenshotPath}" class="screenshot" alt="Step ${step.stepNumber} screenshot">`
+    : ''
+}
                 </div>
             `
-              )
-              .join('')}
+    )
+    .join('')}
         </div>
     </div>
 </body>
@@ -463,10 +463,10 @@ export class PlaywrightAutomationService {
     const faviconDataUri = `data:image/svg+xml;base64,${Buffer.from(svgIcon).toString('base64')}`;
     const brandMarker = 'data-origin="dobb-ai-branding"';
     const brandingScript = `
-    <!-- DOBB.ai branding override -->
+    <!-- dobb.ai branding override -->
     <script data-origin="dobb-ai-branding">
       (function() {
-        const BRAND = 'DOBB.ai';
+        const BRAND = 'dobb.ai';
         const FAVICON_DATA = '${faviconDataUri}';
         const SHOW_TEXT = (window.NodeFilter && window.NodeFilter.SHOW_TEXT) || 4;
         const FILTER_ACCEPT = (window.NodeFilter && window.NodeFilter.FILTER_ACCEPT) || 1;
@@ -628,7 +628,7 @@ export class PlaywrightAutomationService {
         let modified = false;
 
         if (content.includes('Report - Midscene.js')) {
-          content = content.replace('Report - Midscene.js', 'Report - DOBB.ai');
+          content = content.replace('Report - Midscene.js', 'Report - dobb.ai');
           modified = true;
         }
 
@@ -658,7 +658,7 @@ export class PlaywrightAutomationService {
 
     if (updatedFiles > 0) {
       console.log(
-        `🎨 Applied DOBB.ai branding to ${updatedFiles} report${updatedFiles === 1 ? '' : 's'}.`
+        `🎨 Applied dobb.ai branding to ${updatedFiles} report${updatedFiles === 1 ? '' : 's'}.`
       );
     }
 

@@ -8,11 +8,11 @@ export const Header = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-amber-500 rounded-lg flex items-center justify-center">
-              <img src="/head.png" alt="DOBB.ai" className="w-5 h-5 rounded" />
+              <img src="/head.png" alt="dobb.ai" className="w-5 h-5 rounded" />
             </div>
             <div>
               <h1 className="text-xl font-bold bg-gradient-to-r from-purple-300 to-amber-300 bg-clip-text text-transparent">
-                DOBB.ai
+                dobb.ai
               </h1>
               <p className="text-sm text-purple-200">AI-Powered Development</p>
             </div>

@@ -461,7 +461,7 @@ const ChatBot = () => {
               <div className="flex items-center justify-between mt-2">
                 <div className="flex items-center space-x-3">
                   <p className="text-xs text-muted-foreground">
-                    Powered by DOBB.ai
+                    Powered by dobb.ai
                   </p>
                   <Button
                     variant="ghost"
