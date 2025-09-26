@@ -1,13 +1,15 @@
 'use client'
 import React, { useRef, useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Check, X } from "lucide-react";
+import { Check, Cross, X as CrossIcon } from "lucide-react";
 
 interface PricingPlan {
   name: string;
   price: string;
   description: string;
+  missingFeatures?: string[];
   features: string[];
+  subtitle?: string;
   isPopular?: boolean;
   buttonText: string;
   buttonAction?: () => void;
@@ -19,6 +21,7 @@ interface GradientCardProps {
   description?: string;
   icon?: React.ReactNode;
   features?: string[];
+  missingFeatures?: string[];
   buttonText?: string;
   buttonAction?: () => void;
   isPopular?: boolean;
@@ -31,6 +34,7 @@ export const GradientCard = ({
   description = "OpenMail revolutionizes email management with AI-driven sorting, boosting productivity and accessibility",
   icon,
   features,
+  missingFeatures,
   buttonText = "Learn More",
   buttonAction,
   isPopular = false,
@@ -67,6 +71,7 @@ export const GradientCard = ({
   const cardDescription = plan?.description || description;
   const cardButtonText = plan?.buttonText || buttonText;
   const cardFeatures = plan?.features || features || [];
+  const cardMissingFeatures = plan?.missingFeatures || missingFeatures || [];
   const cardIsPopular = plan?.isPopular || isPopular;
 
   return (
@@ -77,7 +82,7 @@ export const GradientCard = ({
         className="relative rounded-[32px] overflow-hidden"
         style={{
           width: variant === 'pricing' ? "100%" : "360px",
-          height: variant === 'pricing' ? "525px" : "450px",
+          height: variant === 'pricing' ? "550px" : "450px",
           minHeight: variant === 'pricing' ? "500px" : "450px",
           transformStyle: "preserve-3d",
           backgroundColor: "#0e131f",
@@ -378,23 +383,7 @@ export const GradientCard = ({
             >
               {cardTitle}
             </motion.h3>
-            
-            {/* Price for pricing variant */}
-            {variant === 'pricing' && plan?.price && (
-              <motion.div
-                className="text-3xl font-bold bg-gradient-to-r from-purple-300 to-amber-300 bg-clip-text text-transparent mb-3"
-                initial={{ filter: "blur(3px)", opacity: 0.7 }}
-                animate={{
-                  filter: "blur(0px)",
-                  opacity: 1,
-                  transition: { duration: 1.2, delay: 0.3 }
-                }}
-              >
-                {plan.price}
-              </motion.div>
-            )}
-            
-            <motion.p
+               <motion.p
               className="text-sm mb-6 text-gray-300"
               style={{
                 lineHeight: 1.5,
@@ -410,9 +399,46 @@ export const GradientCard = ({
             >
               {cardDescription}
             </motion.p>
+            {/* Price for pricing variant */}
+            {variant === 'pricing' && plan?.price && (
+              <motion.div
+                className="text-3xl font-bold bg-gradient-to-r from-purple-300 to-amber-300 bg-clip-text text-transparent mb-1"
+                initial={{ filter: "blur(3px)", opacity: 0.7 }}
+                animate={{
+                  filter: "blur(0px)",
+                  opacity: 1,
+                  transition: { duration: 1.2, delay: 0.3 }
+                }}
+              >
+                {plan.price}
+                
+              </motion.div>
+            )}
+                  <motion.div className="text-sm text-gray-300 mb-6">
+                    {plan.subtitle}
+                  </motion.div>
+         
 
             {/* Features list for pricing variant */}
             {variant === 'pricing' && cardFeatures.length > 0 && (
+              <motion.div
+                className="space-y-3 mb-3"
+                initial={{ filter: "blur(3px)", opacity: 0.7 }}
+                animate={{
+                  filter: "blur(0px)",
+                  opacity: 0.85,
+                  transition: { duration: 1.2, delay: 0.5 }
+                }}
+              >
+                {cardFeatures.map((feature, index) => (
+                  <div key={`feature-${index}`} className="flex items-center space-x-2">
+                    <Check className="h-4 w-4 text-green-400 flex-shrink-0" />
+                    <span className="text-sm text-white">{feature}</span>
+                  </div>
+                ))}
+              </motion.div>
+            )}
+ {variant === 'pricing' && cardMissingFeatures.length > 0 ? (
               <motion.div
                 className="space-y-3 mb-6"
                 initial={{ filter: "blur(3px)", opacity: 0.7 }}
@@ -422,14 +448,14 @@ export const GradientCard = ({
                   transition: { duration: 1.2, delay: 0.5 }
                 }}
               >
-                {cardFeatures.map((feature, index) => (
-                  <div key={index} className="flex items-center space-x-2">
-                    <Check className="h-4 w-4 text-green-400 flex-shrink-0" />
+                {cardMissingFeatures.map((feature, index) => (
+                  <div key={`missing-${index}`} className="flex items-center space-x-2">
+                    <CrossIcon className="h-4 w-4 text-red-400 flex-shrink-0" />
                     <span className="text-sm text-white">{feature}</span>
                   </div>
                 ))}
               </motion.div>
-            )}
+            ) : <div className="h-6"></div>}
 </div>
 
             {/* Button */}

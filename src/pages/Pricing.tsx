@@ -13,13 +13,23 @@ const Pricing = () => {
         "Limited impact analysis",
         "Basic user stories"
       ],
+      missingFeatures: [
+        "QA automation",
+        "Self-healing tests",
+        "Dedicated support",
+        // "Custom integrations",
+        // "Priority feature requests",
+        // "SLA guarantees",
+        // "On-premise deployment",
+      ],
       isPopular: false,
       buttonText: "Get Started Free",
       icon: <Users className="w-5 h-5" />
     },
     {
       name: "Starter",
-      price: "$49/user/month",
+      price: "$49",
+      subtitle: "per user per month",
       description: "For growing teams",
       features: [
         "Everything in Free",
@@ -28,18 +38,27 @@ const Pricing = () => {
         "Advanced user stories",
         "QA automation"
       ],
+      missingFeatures: [
+        "Self-healing tests",
+      ],
       isPopular: true,
       buttonText: "Start Free Trial",
       icon: <Zap className="w-5 h-5" />
     },
     {
       name: "Pro",
-      price: "$149/user/month",
+      price: "$149",
+      subtitle: "per user per month",
       description: "For advanced teams",
       features: [
         "Everything in Starter",
         "Self-healing tests",
         "Knowledge transfer"
+      ],
+      missingFeatures: [
+        "Dedicated support",
+        "Custom integrations",
+        "Priority feature requests",
       ],
       isPopular: false,
       buttonText: "Start Free Trial",
