@@ -235,11 +235,9 @@ const Landing = () => {
       <section className="relative z-10 px-6 py-16 bg-gradient-to-b from-purple-950/20 to-transparent">
         <div className="max-w-4xl mx-auto text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-            What Engineers Say
+            What Founders Say
           </h2>
-          <p className="text-lg text-purple-200">
-            Real feedback from our community
-          </p>
+          
         </div>
         
         <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-8">
@@ -254,11 +252,10 @@ const Landing = () => {
             </p>
             <div className="flex items-center">
               <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-sm font-semibold mr-3">
-                F
+                S
               </div>
               <div>
-                <p className="text-white font-semibold">Founder, Tech Startup</p>
-                <p className="text-purple-300 text-sm">Series A Company</p>
+                <p className="text-white font-semibold">Sareena Jose</p>
               </div>
             </div>
           </div>
@@ -274,11 +271,10 @@ const Landing = () => {
             </p>
             <div className="flex items-center">
               <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-amber-500 rounded-full flex items-center justify-center text-white text-sm font-semibold mr-3">
-                C
+                S
               </div>
               <div>
-                <p className="text-white font-semibold">Co-Founder, SaaS Platform</p>
-                <p className="text-purple-300 text-sm">Enterprise Software</p>
+                <p className="text-white font-semibold">Sagar M Sabu</p>
               </div>
             </div>
           </div>
@@ -294,11 +290,10 @@ const Landing = () => {
             </p>
             <div className="flex items-center">
               <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-sm font-semibold mr-3">
-                E
+                R
               </div>
               <div>
-                <p className="text-white font-semibold">CEO, Fintech Startup</p>
-                <p className="text-purple-300 text-sm">Unicorn Company</p>
+                <p className="text-white font-semibold">Roni Vincent</p>
               </div>
             </div>
           </div>
