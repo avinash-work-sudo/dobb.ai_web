@@ -1113,7 +1113,7 @@ const TestCaseRunner = () => {
                         </div>
                         <div className="border border-border rounded-lg overflow-hidden">
                           <iframe
-                            src={'../backend/artifacts/reports/report_1758735090797.html'}
+                            src={`http://localhost:3001/api/artifacts/${currentExecutionId}/report/playwright`}
                             className="w-full h-96 border-0"
                             title="Test Execution Report"
                             sandbox="allow-scripts allow-same-origin"
