@@ -526,9 +526,28 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 text-white relative overflow-hidden">
+      {/* Background Effects */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Mystical grid pattern */}
+        <div 
+          className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage: `
+              linear-gradient(rgba(147, 51, 234, 0.3) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(147, 51, 234, 0.3) 1px, transparent 1px)
+            `,
+            backgroundSize: '60px 60px'
+          }}
+        />
+        
+        {/* Floating orbs */}
+        <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-gradient-to-br from-purple-600/30 to-amber-500/20 rounded-full blur-2xl animate-pulse" />
+        <div className="absolute bottom-1/3 right-1/4 w-24 h-24 bg-gradient-to-br from-amber-500/30 to-purple-600/20 rounded-full blur-xl animate-pulse" style={{animationDelay: '2s'}} />
+      </div>
+
       {/* Top Bar */}
-      <header className="border-b border-border bg-surface-elevated">
+      <header className="relative z-10 border-b border-purple-500/30 bg-gradient-to-r from-slate-900/90 to-purple-950/90 backdrop-blur-sm">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -536,29 +555,29 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
                 variant="ghost" 
                 size="icon" 
                 onClick={() => navigate('/features')}
-                className="hover:bg-surface-subtle"
+                className="hover:bg-purple-500/20 text-purple-200 hover:text-white"
               >
-                <ArrowLeft className="h-5 w-5 text-muted-foreground" />
+                <ArrowLeft className="h-5 w-5" />
               </Button>
-              <div className="bg-gradient-primary p-2 rounded-lg shadow-elegant">
-                <BarChart3 className="h-6 w-6 text-white" />
+              <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-amber-500 rounded-lg flex items-center justify-center">
+                <img src="/head.png" alt="DOBB.ai" className="w-5 h-5 rounded" />
               </div>
-              <h1 className="text-xl font-bold text-foreground">DOBB.ai</h1>
+              <h1 className="text-xl font-bold bg-gradient-to-r from-purple-300 to-amber-300 bg-clip-text text-transparent">DOBB.ai</h1>
             </div>
             
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="icon" className="hover:bg-surface-subtle">
-                <Settings className="h-5 w-5 text-muted-foreground" />
+              <Button variant="ghost" size="icon" className="hover:bg-purple-500/20 text-purple-200 hover:text-white">
+                <Settings className="h-5 w-5" />
               </Button>
-              <Button variant="ghost" size="icon" className="hover:bg-surface-subtle">
-                <User className="h-5 w-5 text-muted-foreground" />
+              <Button variant="ghost" size="icon" className="hover:bg-purple-500/20 text-purple-200 hover:text-white">
+                <User className="h-5 w-5" />
               </Button>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-6 py-8">
+      <main className="relative z-10 container mx-auto px-6 py-8">
         <div className="max-w-6xl mx-auto">
           {/* Breadcrumbs */}
           <div className="mb-6">
@@ -609,15 +628,15 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
           </div>
 
           {/* AI Summary */}
-          <Card className="bg-surface-elevated border border-border mb-8">
+          <Card className="bg-gradient-to-br from-purple-900/30 to-slate-900/30 border-purple-500/30 backdrop-blur-sm mb-8">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <CheckCircle2 className="h-5 w-5 text-green-500" />
-                <span>AI-Generated Summary</span>
+                <CheckCircle2 className="h-5 w-5 text-green-400" />
+                <span className="text-white">AI-Generated Summary</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-foreground leading-relaxed">
+              <p className="text-purple-100 leading-relaxed">
                 {aiSummary || "Summary will appear once analysis completes."}
               </p>
             </CardContent>
@@ -626,13 +645,13 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
           {/* Impact Report */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             {/* Impacted Modules - Product Perspective */}
-            <Card className="bg-surface-elevated border border-border">
+            <Card className="bg-gradient-to-br from-purple-900/30 to-slate-900/30 border-purple-500/30 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
-                  <Code className="h-5 w-5 text-blue-500" />
-                  <span>Impacted Modules</span>
+                  <Code className="h-5 w-5 text-blue-400" />
+                  <span className="text-white">Impacted Modules</span>
                 </CardTitle>
-                <CardDescription>Business and product areas affected by this feature</CardDescription>
+                <CardDescription className="text-purple-200">Business and product areas affected by this feature</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -675,13 +694,13 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
             </Card>
 
             {/* Technical Impacts - Technical/Coding Perspective */}
-            <Card className="bg-surface-elevated border border-border">
+            <Card className="bg-gradient-to-br from-purple-900/30 to-slate-900/30 border-purple-500/30 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
-                  <Cpu className="h-5 w-5 text-yellow-500" />
-                  <span>Technical Impacts</span>
+                  <Cpu className="h-5 w-5 text-yellow-400" />
+                  <span className="text-white">Technical Impacts</span>
                 </CardTitle>
-                <CardDescription>Technical components and code modules affected</CardDescription>
+                <CardDescription className="text-purple-200">Technical components and code modules affected</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -750,13 +769,13 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
             </Card>
 
             {/* Identified Gaps - Detailed by Category */}
-            <Card className="bg-surface-elevated border border-border">
+            <Card className="bg-gradient-to-br from-purple-900/30 to-slate-900/30 border-purple-500/30 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
-                  <AlertTriangle className="h-5 w-5 text-red-500" />
-                  <span>Identified Gaps</span>
+                  <AlertTriangle className="h-5 w-5 text-red-400" />
+                  <span className="text-white">Identified Gaps</span>
                 </CardTitle>
-                <CardDescription>Technical feasibility concerns and missing requirements</CardDescription>
+                <CardDescription className="text-purple-200">Technical feasibility concerns and missing requirements</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -848,7 +867,7 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
               onClick={() => setShowRefineModal(true)}
-              className="bg-gradient-primary text-white hover:opacity-90 transition-all duration-300"
+              className="bg-gradient-to-r from-purple-600 to-amber-600 hover:from-purple-700 hover:to-amber-700 text-white transition-all duration-300 shadow-2xl shadow-purple-500/25"
               size="lg"
               disabled={isReanalyzing}
             >
@@ -858,7 +877,7 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
             <Button 
               onClick={handleReanalyze}
               variant="outline"
-              className="border-yellow-500 text-yellow-400 hover:bg-yellow-500 hover:text-white transition-all duration-300"
+              className="border-amber-500/50 text-amber-300 hover:bg-amber-500/20 hover:border-amber-400 transition-all duration-300"
               size="lg"
               disabled={isReanalyzing}
             >
@@ -872,7 +891,7 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
             <Button 
               onClick={handleGenerateUserStories}
               variant="outline"
-              className="border-primary text-primary hover:bg-primary hover:text-white transition-all duration-300"
+              className="border-purple-500/50 text-purple-300 hover:bg-purple-500/20 hover:border-purple-400 transition-all duration-300"
               size="lg"
               disabled={isReanalyzing || isGeneratingStories}
             >
@@ -889,7 +908,7 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
 
       {/* Refine PRD Modal */}
       <Dialog open={showRefineModal} onOpenChange={setShowRefineModal}>
-        <DialogContent className="max-w-4xl max-h-[80vh] bg-surface-elevated border border-border">
+        <DialogContent className="max-w-4xl max-h-[80vh] bg-gradient-to-br from-slate-900 to-purple-950 border-purple-500/30 text-white">
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2">
               <FileEdit className="h-5 w-5 text-primary" />
@@ -904,7 +923,7 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
             <Textarea
               value={refinedPRD}
               onChange={(e) => setRefinedPRD(e.target.value)}
-              className="min-h-[400px] resize-none bg-surface-subtle border-border font-mono text-sm"
+              className="min-h-[400px] resize-none bg-purple-900/30 border-purple-500/30 font-mono text-sm text-white placeholder:text-purple-300"
               placeholder="Refined PRD content will appear here..."
             />
           </div>
@@ -915,7 +934,7 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
             </Button>
             <Button 
               onClick={handleRefineAccept}
-              className="bg-gradient-primary text-white hover:opacity-90"
+              className="bg-gradient-to-r from-purple-600 to-amber-600 hover:from-purple-700 hover:to-amber-700 text-white"
             >
               Accept Changes
             </Button>
