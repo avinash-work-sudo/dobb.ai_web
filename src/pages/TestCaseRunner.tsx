@@ -10,12 +10,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { toast, useToast } from '@/hooks/use-toast';
-import { url } from 'inspector';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import {
   ArrowLeft,
   BarChart3,
@@ -39,7 +38,6 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 
 interface ExecutionStep {
   stepNumber: number;
@@ -748,9 +746,28 @@ const TestCaseRunner = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 text-white relative overflow-hidden">
+      {/* Background Effects */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Mystical grid pattern */}
+        <div 
+          className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage: `
+              linear-gradient(rgba(147, 51, 234, 0.3) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(147, 51, 234, 0.3) 1px, transparent 1px)
+            `,
+            backgroundSize: '60px 60px'
+          }}
+        />
+        
+        {/* Floating orbs */}
+        <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-gradient-to-br from-purple-600/30 to-amber-500/20 rounded-full blur-2xl animate-pulse" />
+        <div className="absolute bottom-1/3 right-1/4 w-24 h-24 bg-gradient-to-br from-amber-500/30 to-purple-600/20 rounded-full blur-xl animate-pulse" style={{animationDelay: '2s'}} />
+      </div>
+
       {/* Top Bar */}
-      <header className="border-b border-border bg-surface-elevated">
+      <header className="relative z-10 border-b border-purple-500/30 bg-gradient-to-r from-slate-900/90 to-purple-950/90 backdrop-blur-sm">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -758,29 +775,29 @@ const TestCaseRunner = () => {
                 variant="ghost" 
                 size="icon" 
                 onClick={() => navigate(`/feature/${id}/stories/${storyId}`)}
-                className="hover:bg-surface-subtle"
+                className="hover:bg-purple-500/20 text-purple-200 hover:text-white"
               >
-                <ArrowLeft className="h-5 w-5 text-muted-foreground" />
+                <ArrowLeft className="h-5 w-5" />
               </Button>
-              <div className="p-2 rounded-lg shadow-elegant">
-                <img src="/head.png" alt="dobb.ai" className="size-10" />
+              <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-amber-500 rounded-lg flex items-center justify-center">
+                <img src="/head.png" alt="dobb.ai" className="w-5 h-5 rounded" />
               </div>
-              <h1 className="text-xl font-bold text-foreground">Test Case Runner</h1>
+              <h1 className="text-xl font-bold bg-gradient-to-r from-purple-300 to-amber-300 bg-clip-text text-transparent">Test Case Runner</h1>
             </div>
             
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="icon" className="hover:bg-surface-subtle">
-                <Settings className="h-5 w-5 text-muted-foreground" />
+              <Button variant="ghost" size="icon" className="hover:bg-purple-500/20 text-purple-200 hover:text-white">
+                <Settings className="h-5 w-5" />
               </Button>
-              <Button variant="ghost" size="icon" className="hover:bg-surface-subtle">
-                <User className="h-5 w-5 text-muted-foreground" />
+              <Button variant="ghost" size="icon" className="hover:bg-purple-500/20 text-purple-200 hover:text-white">
+                <User className="h-5 w-5" />
               </Button>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-6 py-8">
+      <main className="relative z-10 container mx-auto px-6 py-8">
         <div className="max-w-6xl mx-auto">
           {/* Breadcrumbs */}
           <div className="mb-6">
@@ -854,35 +871,35 @@ const TestCaseRunner = () => {
             </h1>
             
             {/* Test Case Description */}
-            <Card className="bg-surface-elevated border border-border mb-6">
+            <Card className="bg-gradient-to-br from-purple-900/30 to-slate-900/30 border-purple-500/30 backdrop-blur-sm mb-6">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
-                  <FileText className="h-5 w-5 text-primary" />
-                  <span>Test Case Details</span>
+                  <FileText className="h-5 w-5 text-purple-300" />
+                  <span className="text-white">Test Case Details</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-foreground leading-relaxed mb-4">
+                <p className="text-purple-100 leading-relaxed mb-4">
                   {testCase.description}
                 </p>
                 
                 <div className="mb-4">
-                  <h4 className="text-sm font-semibold text-foreground mb-2">Test Steps:</h4>
+                  <h4 className="text-sm font-semibold text-white mb-2">Test Steps:</h4>
                   <ol className="space-y-1">
                     {testCase.steps.map((step, index) => (
                       <li key={index} className="flex items-start space-x-2 text-sm">
-                        <span className="bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium flex-shrink-0 mt-0.5">
+                        <span className="bg-gradient-to-r from-purple-500 to-amber-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium flex-shrink-0 mt-0.5">
                           {index + 1}
                         </span>
-                        <span className="text-muted-foreground">{step}</span>
+                        <span className="text-purple-200">{step}</span>
                       </li>
                     ))}
                   </ol>
                 </div>
 
                 <div>
-                  <h4 className="text-sm font-semibold text-foreground mb-2">Expected Result:</h4>
-                  <p className="text-sm text-muted-foreground bg-surface-subtle p-3 rounded-lg">
+                  <h4 className="text-sm font-semibold text-white mb-2">Expected Result:</h4>
+                  <p className="text-sm text-purple-200 bg-purple-900/30 p-3 rounded-lg">
                     {testCase.expectedResult}
                   </p>
                 </div>
@@ -892,13 +909,13 @@ const TestCaseRunner = () => {
 
           {/* Automation Control Panel */}
           <div className="space-y-6">
-            <Card>
+            <Card className="bg-gradient-to-br from-purple-900/30 to-slate-900/30 border-purple-500/30 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
-                  <Play className="h-5 w-5 text-primary" />
-                  <span>AI-Powered Test Automation</span>
+                  <Play className="h-5 w-5 text-purple-300" />
+                  <span className="text-white">AI-Powered Test Automation</span>
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-purple-200">
                   This test case will be executed using natural language automation
                 </CardDescription>
               </CardHeader>
@@ -911,24 +928,24 @@ const TestCaseRunner = () => {
                     onCheckedChange={setHeadless}
                     disabled={isRunning}
                   />
-                  <label htmlFor="headless" className="text-sm font-medium">
+                  <label htmlFor="headless" className="text-sm font-medium text-white">
                     Run in headless mode
                   </label>
                 </div>
 
                 {/* Task Input */}
                 <div>
-                  <label className="text-sm font-medium mb-2 block">
+                  <label className="text-sm font-medium mb-2 block text-white">
                     Automation Task (Auto-generated from test steps):
                   </label>
                   <Textarea
                     value={task}
                     onChange={(e) => setTask(e.target.value)}
                     rows={4}
-                    className="resize-none"
+                    className="resize-none bg-purple-900/30 border-purple-500/30 text-white placeholder:text-purple-300"
                     disabled={isRunning}
                   />
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-xs text-purple-300 mt-1">
                     This task was automatically generated from the test case steps. You can modify it if needed.
                   </p>
                 </div>
@@ -938,7 +955,7 @@ const TestCaseRunner = () => {
                   <Button 
                     onClick={runAutomation} 
                     disabled={isRunning || !task.trim()}
-                    className="flex-1"
+                    className="flex-1 bg-gradient-to-r from-purple-600 to-amber-600 hover:from-purple-700 hover:to-amber-700 text-white"
                   >
                     {isRunning ? (
                       <>
@@ -968,8 +985,8 @@ const TestCaseRunner = () => {
                 {isRunning && (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
-                      <span>{currentStep}</span>
-                      <span>{progress}%</span>
+                      <span className="text-white">{currentStep}</span>
+                      <span className="text-white">{progress}%</span>
                     </div>
                     <Progress value={progress} className="w-full" />
                   </div>
@@ -979,12 +996,12 @@ const TestCaseRunner = () => {
 
             {/* Results */}
             {result && (
-              <Card>
+              <Card className="bg-gradient-to-br from-purple-900/30 to-slate-900/30 border-purple-500/30 backdrop-blur-sm">
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
                     <span className="flex items-center space-x-2">
                       {getStatusIcon(result.execution?.status || result.status)}
-                      <span>Test Execution Results</span>
+                      <span className="text-white">Test Execution Results</span>
                     </span>
                     <div className="flex items-center space-x-2">
                       <Badge variant="outline" className="text-xs">
@@ -1002,24 +1019,24 @@ const TestCaseRunner = () => {
                     {result.execution && (
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                         <div>
-                          <span className="text-muted-foreground">Duration:</span>
-                          <div className="font-medium">
+                          <span className="text-purple-300">Duration:</span>
+                          <div className="font-medium text-white">
                             {result.execution.duration_ms ? `${Math.round(result.execution.duration_ms / 1000)}s` : 'N/A'}
                           </div>
                         </div>
                         <div>
-                          <span className="text-muted-foreground">Steps:</span>
-                          <div className="font-medium">{result.steps?.length || 0}</div>
+                          <span className="text-purple-300">Steps:</span>
+                          <div className="font-medium text-white">{result.steps?.length || 0}</div>
                         </div>
                         <div>
-                          <span className="text-muted-foreground">Started:</span>
-                          <div className="font-medium">
+                          <span className="text-purple-300">Started:</span>
+                          <div className="font-medium text-white">
                             {result.execution.started_at ? new Date(result.execution.started_at).toLocaleTimeString() : 'N/A'}
                           </div>
                         </div>
                         <div>
-                          <span className="text-muted-foreground">Artifacts:</span>
-                          <div className="font-medium">{result.artifacts?.length || 0}</div>
+                          <span className="text-purple-300">Artifacts:</span>
+                          <div className="font-medium text-white">{result.artifacts?.length || 0}</div>
                         </div>
                       </div>
                     )}
@@ -1092,6 +1109,7 @@ const TestCaseRunner = () => {
                         variant="outline" 
                         size="sm"
                         onClick={() => navigate(`/feature/${id}/stories/${storyId}/test-summary`)}
+                        className="border-purple-500/50 text-purple-300 hover:bg-purple-500/20"
                       >
                         <BarChart3 className="mr-2 h-4 w-4" />
                         View All Results
@@ -1102,7 +1120,7 @@ const TestCaseRunner = () => {
                     {showReport && reportUrl && (
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                          <h4 className="font-medium text-foreground">Test Execution Report</h4>
+                          <h4 className="font-medium text-white">Test Execution Report</h4>
                           <Button 
                             variant="ghost" 
                             size="sm"
@@ -1111,7 +1129,7 @@ const TestCaseRunner = () => {
                             <XCircle className="h-4 w-4" />
                           </Button>
                         </div>
-                        <div className="border border-border rounded-lg overflow-hidden">
+                        <div className="border border-purple-500/30 rounded-lg overflow-hidden">
                           <iframe
                             src={`http://localhost:3001/api/artifacts/${currentExecutionId}/report/playwright`}
                             className="w-full h-96 border-0"
@@ -1132,7 +1150,7 @@ const TestCaseRunner = () => {
                             }}
                           />
                         </div>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-purple-300">
                           📊 This report contains detailed execution steps, screenshots, and debugging information.
                         </p>
                       </div>
@@ -1150,18 +1168,18 @@ const TestCaseRunner = () => {
                     {/* Steps Summary */}
                     {result.steps && result.steps.length > 0 && (
                       <div>
-                        <h4 className="font-medium mb-2">Execution Steps:</h4>
+                        <h4 className="font-medium mb-2 text-white">Execution Steps:</h4>
                         <div className="space-y-2 max-h-48 overflow-y-auto">
                           {result.steps.map((step, index) => (
-                            <div key={index} className="flex items-start space-x-3 p-2 rounded border text-sm">
+                            <div key={index} className="flex items-start space-x-3 p-2 rounded border border-purple-500/30 text-sm">
                               {step.success ? (
                                 <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
                               ) : (
                                 <XCircle className="h-4 w-4 text-red-500 mt-0.5" />
                               )}
                               <div className="flex-1">
-                                <div className="font-medium">{step.instruction}</div>
-                                <div className="text-muted-foreground text-xs">
+                                <div className="font-medium text-white">{step.instruction}</div>
+                                <div className="text-purple-300 text-xs">
                                   Step {step.stepNumber} • {step.durationMs}ms
                                   {step.errorMessage && ` • Error: ${step.errorMessage}`}
                                 </div>
