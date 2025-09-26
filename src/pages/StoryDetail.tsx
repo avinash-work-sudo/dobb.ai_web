@@ -379,7 +379,7 @@ const StoryDetail = () => {
                 <div className="bg-gradient-primary p-2 rounded-lg shadow-elegant">
                   <BarChart3 className="h-6 w-6 text-white" />
                 </div>
-                <h1 className="text-xl font-bold text-foreground">DOBB.ai</h1>
+                <h1 className="text-xl font-bold text-foreground">dobb.ai</h1>
               </div>
             </div>
           </div>
@@ -425,7 +425,7 @@ const StoryDetail = () => {
                 <div className="bg-gradient-primary p-2 rounded-lg shadow-elegant">
                   <BarChart3 className="h-6 w-6 text-white" />
                 </div>
-                <h1 className="text-xl font-bold text-foreground">DOBB.ai</h1>
+                <h1 className="text-xl font-bold text-foreground">dobb.ai</h1>
               </div>
             </div>
           </div>
@@ -460,9 +460,9 @@ const StoryDetail = () => {
                 <ArrowLeft className="h-5 w-5 text-muted-foreground" />
               </Button>
               <div className="p-2 rounded-lg shadow-elegant">
-                <img src="/head.png" alt="DOBB.ai" className="size-10" />
+                <img src="/head.png" alt="dobb.ai" className="size-10" />
               </div>
-              <h1 className="text-xl font-bold text-foreground">DOBB.ai</h1>
+              <h1 className="text-xl font-bold text-foreground">dobb.ai</h1>
             </div>
             
             <div className="flex items-center space-x-4">

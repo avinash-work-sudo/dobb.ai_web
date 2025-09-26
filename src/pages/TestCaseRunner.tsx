@@ -763,7 +763,7 @@ const TestCaseRunner = () => {
                 <ArrowLeft className="h-5 w-5 text-muted-foreground" />
               </Button>
               <div className="p-2 rounded-lg shadow-elegant">
-                <img src="/head.png" alt="DOBB.ai" className="size-10" />
+                <img src="/head.png" alt="dobb.ai" className="size-10" />
               </div>
               <h1 className="text-xl font-bold text-foreground">Test Case Runner</h1>
             </div>
@@ -988,7 +988,7 @@ const TestCaseRunner = () => {
                     </span>
                     <div className="flex items-center space-x-2">
                       <Badge variant="outline" className="text-xs">
-                        Playwright
+                        dobb.ai
                       </Badge>
                       <Badge className={`text-xs border ${getStatusColor(result.execution?.status || result.status)}`}>
                         {result.execution?.status || result.status}
@@ -1073,7 +1073,7 @@ const TestCaseRunner = () => {
                           onClick={() => window.open(`http://localhost:3001/api/artifacts/${currentExecutionId}/report/playwright`, '_blank')}
                         >
                           <ExternalLink className="mr-2 h-4 w-4" />
-                          Playwright Trace
+                          dobb.ai Trace
                         </Button>
                       )}
 

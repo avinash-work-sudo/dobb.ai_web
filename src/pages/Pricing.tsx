@@ -119,9 +119,9 @@ const Pricing = () => {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-amber-500 rounded-lg flex items-center justify-center">
-              <img src="/head.png" alt="DOBB.ai" className="w-5 h-5 rounded" />
+              <img src="/head.png" alt="dobb.ai" className="w-5 h-5 rounded" />
             </div>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-purple-300 to-amber-300 bg-clip-text text-transparent">DOBB.ai</h1>
+            <h1 className="text-xl font-bold bg-gradient-to-r from-purple-300 to-amber-300 bg-clip-text text-transparent">dobb.ai</h1>
           </div>
         </div>
       </header>

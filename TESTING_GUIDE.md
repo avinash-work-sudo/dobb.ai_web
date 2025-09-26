@@ -53,7 +53,7 @@ curl http://localhost:3001/health
 2. **Frontend Loading**
 ```bash
 # Open http://localhost:5173
-# Should see: "DOBB.ai" landing page
+# Should see: "dobb.ai" landing page
 ```
 
 3. **Navigation Test**

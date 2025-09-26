@@ -102,10 +102,10 @@ const Landing = () => {
       <header className="relative z-10 flex items-center justify-between p-6">
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-amber-500 rounded-lg flex items-center justify-center">
-            <img src="/head.png" alt="DOBB.ai" className="w-5 h-5 rounded" />
+            <img src="/head.png" alt="dobb.ai" className="w-5 h-5 rounded" />
           </div>
           <span className="text-xl font-bold bg-gradient-to-r from-purple-300 to-amber-300 bg-clip-text text-transparent">
-            DOBB.ai
+            dobb.ai
           </span>
         </div>
         
@@ -123,37 +123,18 @@ const Landing = () => {
         {/* Main Title */}
         <h1 className="text-6xl md:text-8xl lg:text-9xl font-bold leading-tight max-w-6xl">
           <span className="bg-gradient-to-r from-white via-purple-200 to-amber-200 bg-clip-text text-transparent">
-            DOBB.ai
+            dobb.ai
           </span>
           <br />
-          <span className="bg-gradient-to-r from-purple-300 to-amber-300 bg-clip-text text-transparent">
-            Development
-          </span>
+         
         </h1>
 
         {/* Subtitle */}
         <p className="text-2xl md:text-3xl text-purple-200 max-w-4xl leading-relaxed">
-          Free developers from daily hurdles in the product development cycle with AI-powered automation and intelligent impact analysis
+          Free Engineers from daily hurdles in the product development cycle with AI-powered automation and intelligent impact analysis
         </p>
 
-        {/* Stats */}
-        <div className="flex flex-wrap justify-center gap-8 pt-4">
-          <div className="flex items-center space-x-2 text-purple-200">
-            <Users className="w-5 h-5 text-blue-400" />
-            <span className="text-lg font-semibold">10,000+</span>
-            <span className="text-sm">Developers</span>
-          </div>
-          <div className="flex items-center space-x-2 text-purple-200">
-            <Clock className="w-5 h-5 text-green-400" />
-            <span className="text-lg font-semibold">50%</span>
-            <span className="text-sm">Time Saved</span>
-          </div>
-          <div className="flex items-center space-x-2 text-purple-200">
-            <Star className="w-5 h-5 text-yellow-400" />
-            <span className="text-lg font-semibold">4.9/5</span>
-            <span className="text-sm">Rating</span>
-          </div>
-        </div>
+       
 
         {/* CTA Button */}
         <div className="pt-8">
@@ -172,11 +153,9 @@ const Landing = () => {
       <section className="relative z-10 px-6 py-16 bg-gradient-to-b from-transparent to-purple-950/20">
         <div className="max-w-4xl mx-auto text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-            Why Choose DOBB.ai?
+            Why Choose dobb.ai?
           </h2>
-          <p className="text-lg text-purple-200">
-            Join thousands of developers who have transformed their workflow
-          </p>
+        
         </div>
         
         <div className="max-w-5xl mx-auto grid md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -256,7 +235,7 @@ const Landing = () => {
       <section className="relative z-10 px-6 py-16 bg-gradient-to-b from-purple-950/20 to-transparent">
         <div className="max-w-4xl mx-auto text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-            What Developers Say
+            What Engineers Say
           </h2>
           <p className="text-lg text-purple-200">
             Real feedback from our community
@@ -271,15 +250,15 @@ const Landing = () => {
               ))}
             </div>
             <p className="text-purple-200 mb-4 italic">
-              "DOBB.ai has revolutionized our testing process. The self-healing tests save us hours every week."
+              "We're witnessing a paradigm shift in software testing. dobb.ai's AI-driven approach eliminates the traditional bottlenecks that have plagued our industry for decades."
             </p>
             <div className="flex items-center">
               <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-sm font-semibold mr-3">
-                S
+                F
               </div>
               <div>
-                <p className="text-white font-semibold">Sarah Chen</p>
-                <p className="text-purple-300 text-sm">Senior Developer</p>
+                <p className="text-white font-semibold">Founder, Tech Startup</p>
+                <p className="text-purple-300 text-sm">Series A Company</p>
               </div>
             </div>
           </div>
@@ -291,15 +270,15 @@ const Landing = () => {
               ))}
             </div>
             <p className="text-purple-200 mb-4 italic">
-              "The impact analysis feature is incredible. We catch issues before they reach production."
+              "The innovation here is revolutionary. We're not just automating tests - we're creating intelligent systems that understand and adapt to our product's evolution in real-time."
             </p>
             <div className="flex items-center">
               <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-amber-500 rounded-full flex items-center justify-center text-white text-sm font-semibold mr-3">
-                M
+                C
               </div>
               <div>
-                <p className="text-white font-semibold">Mike Rodriguez</p>
-                <p className="text-purple-300 text-sm">Tech Lead</p>
+                <p className="text-white font-semibold">Co-Founder, SaaS Platform</p>
+                <p className="text-purple-300 text-sm">Enterprise Software</p>
               </div>
             </div>
           </div>
@@ -311,15 +290,15 @@ const Landing = () => {
               ))}
             </div>
             <p className="text-purple-200 mb-4 italic">
-              "Best investment we've made for our development team. ROI was immediate."
+              "This is the future of quality assurance. We're building products faster than ever while maintaining higher quality standards. The impact analysis alone has transformed how we approach feature development."
             </p>
             <div className="flex items-center">
               <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-sm font-semibold mr-3">
-                A
+                E
               </div>
               <div>
-                <p className="text-white font-semibold">Alex Kim</p>
-                <p className="text-purple-300 text-sm">Engineering Manager</p>
+                <p className="text-white font-semibold">CEO, Fintech Startup</p>
+                <p className="text-purple-300 text-sm">Unicorn Company</p>
               </div>
             </div>
           </div>
@@ -333,9 +312,7 @@ const Landing = () => {
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
               Ready to Transform Your Development Workflow?
             </h2>
-            <p className="text-xl text-purple-200 mb-8 max-w-2xl mx-auto">
-              Join thousands of developers who are already saving time and building better products with DOBB.ai
-            </p>
+            
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Button 
                 size="lg"

@@ -401,7 +401,7 @@ const ChatBot = () => {
               </div>
               <div className="flex items-center justify-between mt-2">
                 <p className="text-xs text-muted-foreground">
-                  Powered by DOBB.ai
+                  Powered by dobb.ai
                 </p>
                 <Badge variant="secondary" className="text-xs">
                   AI Assistant
