@@ -1,4 +1,6 @@
-// Mock API for impact analysis
+const BACKEND_API_URL = import.meta.env.VITE_BACKEND_API_URL;
+
+// Real API for impact analysis
 export const impactAnalysisAPI = {
   async startAnalysis(data: {
     featureId: string;
@@ -7,119 +9,148 @@ export const impactAnalysisAPI = {
     figmaLink?: string;
     transcriptLink?: string;
   }) {
-    // Simulate API delay for processing
-    await new Promise(resolve => setTimeout(resolve, 3000));
+   
     
-    // Mock comprehensive impact analysis result
-    const mockImpactAnalysis = {
-      summary: "The User Authentication System is a critical infrastructure component that requires careful implementation across multiple application layers. The analysis reveals significant dependencies on the database layer, API gateway, and frontend components. This feature introduces moderate complexity with high business value and requires coordination between backend and frontend teams.",
-      refined_prd: `# Enhanced User Authentication System
-
-## Overview
-This document outlines the requirements for implementing a comprehensive user authentication system that includes registration, login, password reset, and session management capabilities.
-
-## Features
-1. **User Registration**
-   - Email/username validation
-   - Password strength requirements
-   - Email verification process
-   - Terms of service acceptance
-
-2. **User Login**
-   - Multi-factor authentication support
-   - Remember me functionality
-   - Account lockout after failed attempts
-   - Social login integration (Google, GitHub)
-
-3. **Password Management**
-   - Secure password reset via email
-   - Password history tracking
-   - Password expiration policies
-   - Account recovery options
-
-## Technical Requirements
-- JWT token-based authentication
-- HTTPS encryption for all auth endpoints
-- Rate limiting on authentication attempts
-- Audit logging for security events
-
-## Success Metrics
-- 99.9% authentication uptime
-- < 500ms average response time
-- Zero security incidents
-- 95% user satisfaction score`,
-      impactScore: {
-        totalImpactScore: 8.5,
-        riskLevel: "Medium",
-        estimatedEffort: "3-4 weeks",
-        confidence: 0.85
-      },
-      impactedModules: [
-        {
-          name: "User Authentication",
-          impact: "High",
-          description: "Changes required to user login flow and session management",
-          effort: "1 week"
+    try {
+      const response = await fetch(`${BACKEND_API_URL}/report/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        {
-          name: "Payment Processing",
-          impact: "Medium", 
-          description: "Updates needed for payment validation and error handling",
-          effort: "3 days"
-        },
-        {
-          name: "Data Analytics",
-          impact: "Low",
-          description: "Minor updates to tracking events",
-          effort: "1 day"
-        }
-      ],
-      technicalImpacts: [
-        {
-          category: "Database",
-          changes: ["New user_preferences table", "Index optimization on user_sessions"],
-          complexity: "Medium"
-        },
-        {
-          category: "API",
-          changes: ["3 new endpoints", "2 modified endpoints", "Updated authentication middleware"],
-          complexity: "High"
-        },
-        {
-          category: "Frontend",
-          changes: ["New settings page", "Updated login component", "Enhanced error handling"],
-          complexity: "Medium"
-        }
-      ],
-      identifiedGaps: [
-        {
-          type: "Security",
-          description: "Need to implement rate limiting for new API endpoints",
-          priority: "High",
-          recommendation: "Add Redis-based rate limiting before deployment"
-        },
-        {
-          type: "Testing",
-          description: "Missing integration tests for payment flow",
-          priority: "Medium", 
-          recommendation: "Create comprehensive test suite for payment processing"
-        },
-        {
-          type: "Documentation",
-          description: "API documentation needs updates",
-          priority: "Low",
-          recommendation: "Update OpenAPI specs and add code examples"
-        }
-      ]
-    };
+        body: JSON.stringify({
+          prd_url: data.fileUrl || data.prdLink
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      // Return in the expected format for compatibility with existing code
+      return {
+        success: true,
+        analysisId: `analysis_${Date.now()}`,
+        status: 'completed',
+        impactAnalysis: result,
+        message: 'Impact analysis completed successfully'
+      };
+    } catch (error) {
+      console.error('Impact analysis API error:', error);
+      throw new Error(`Failed to analyze feature: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+};
+
+// API for user stories generation
+export const userStoriesAPI = {
+  async generateUserStories(data: {
+    featureId: string;
+    prdLink: string;
+  }) {
     
-    // Mock successful response
-    return {
-      success: true,
-      analysisId: `analysis_${Date.now()}`,
-      status: 'completed',
-      impactAnalysis: mockImpactAnalysis,
-      message: 'Impact analysis completed successfully'
-    };
+    
+    try {
+      const response = await fetch(`${BACKEND_API_URL}/user_stories/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prd_url: data.prdLink
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      // Expected API response structure should match dummy stories format:
+      // [
+      //   {
+      //     title: string,
+      //     description: string,
+      //     acceptance_criteria: string[],
+      //     priority: "high" | "medium" | "low",
+      //     estimated_hours: number,
+      //     status: "draft" | "in_progress" | "completed",
+      //     test_cases: [
+      //       {
+      //         name: string,
+      //         description: string,
+      //         steps: string[],
+      //         expected_result: string,
+      //         priority: "high" | "medium" | "low"
+      //       }
+      //     ]
+      //   }
+      // ]
+      
+      // Return in the expected format for compatibility with existing code
+      // API returns the array directly, not wrapped in user_stories property
+      return {
+        success: true,
+        userStories: result, // result is already the array of user stories
+        message: 'User stories generated successfully'
+      };
+    } catch (error) {
+      console.error('User stories API error:', error);
+      throw new Error(`Failed to generate user stories: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+};
+
+// API for chatbot
+export const chatbotAPI = {
+  async sendMessage(data: {
+    message: string;
+    conversationId?: string;
+  }) {
+    
+    
+    try {
+      const response = await fetch(`${BACKEND_API_URL}/chatbot`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: data.message,
+          conversation_id: data.conversationId || null
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      // Expected API response structure:
+      // {
+      //   reply: string,
+      //   conversation_id?: string
+      // }
+      
+      return {
+        success: true,
+        response: result.reply || result.response || result.message || "I'm here to help!",
+        conversationId: result.conversation_id || result.conversationId,
+        message: 'Message sent successfully'
+      };
+    } catch (error) {
+      console.error('Chatbot API error:', error);
+      
+      // Return a fallback response instead of throwing
+      return {
+        success: false,
+        response: "I'm sorry, I'm having trouble connecting right now. Please try again later.",
+        conversationId: data.conversationId,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
   }
 };

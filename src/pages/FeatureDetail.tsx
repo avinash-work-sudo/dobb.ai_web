@@ -1,41 +1,38 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { impactAnalysisAPI, userStoriesAPI } from "@/api/impact-analysis";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Breadcrumb,
-  BreadcrumbEllipsis,
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
-  BreadcrumbSeparator,
+  BreadcrumbSeparator
 } from "@/components/ui/breadcrumb";
-import { 
-  ArrowLeft, 
-  BarChart3, 
-  Settings, 
-  User, 
-  Loader2,
-  CheckCircle2,
-  AlertTriangle,
-  Code,
-  Database,
-  Cpu,
-  Globe,
-  RefreshCw,
-  FileEdit,
-  Users,
-  Home
-} from "lucide-react";
-import { impactAnalysisAPI } from "@/api/impact-analysis";
-import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  BarChart3,
+  CheckCircle2,
+  Code,
+  Cpu,
+  Database,
+  FileEdit,
+  Globe,
+  Home,
+  Loader2,
+  RefreshCw,
+  Settings,
+  User,
+  Users
+} from "lucide-react";
+import React, { useCallback, useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 
 const FeatureDetail = () => {
   const { id } = useParams();
@@ -51,7 +48,63 @@ const FeatureDetail = () => {
   const [feature, setFeature] = useState<any | null>(null);
   const [aiSummary, setAiSummary] = useState("");
 
-  const generateRefinedPRD = (analysis: any) => {
+  // Helper functions for rendering dynamic data
+  const getImpactBadgeVariant = (impact: string) => {
+    switch (impact?.toLowerCase()) {
+      case 'critical':
+      case 'high':
+        return 'destructive';
+      case 'medium':
+        return { className: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' };
+      case 'low':
+        return { className: 'bg-blue-500/20 text-blue-400 border-blue-500/30' };
+      default:
+        return 'secondary';
+    }
+  };
+
+  const getComplexityBadgeVariant = (complexity: string) => {
+    switch (complexity?.toLowerCase()) {
+      case 'critical':
+        return 'destructive';
+      case 'high':
+        return 'destructive';
+      case 'medium':
+        return { className: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' };
+      case 'low':
+        return { className: 'bg-blue-500/20 text-blue-400 border-blue-500/30' };
+      default:
+        return 'secondary';
+    }
+  };
+
+  const getPriorityBadgeVariant = (priority: string) => {
+    switch (priority?.toLowerCase()) {
+      case 'critical':
+        return 'destructive';
+      case 'high':
+        return 'destructive';
+      case 'medium':
+        return { className: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' };
+      case 'low':
+        return { className: 'bg-blue-500/20 text-blue-400 border-blue-500/30' };
+      default:
+        return 'secondary';
+    }
+  };
+
+  const getIconForModule = (name: string) => {
+    const nameLower = name.toLowerCase();
+    if (nameLower.includes('user') || nameLower.includes('auth')) return Users;
+    if (nameLower.includes('database') || nameLower.includes('data')) return Database;
+    if (nameLower.includes('api') || nameLower.includes('service')) return Globe;
+    if (nameLower.includes('ui') || nameLower.includes('interface')) return Code;
+    if (nameLower.includes('analytics') || nameLower.includes('tracking')) return BarChart3;
+    if (nameLower.includes('admin') || nameLower.includes('management')) return Settings;
+    return Code; // default icon
+  };
+
+  const generateRefinedPRD = useCallback((analysis: any) => {
     const s = analysis?.summary || analysis?.impactScore;
     const modules = analysis?.impactedModules || [];
     const tech = analysis?.technicalImpacts || [];
@@ -76,11 +129,12 @@ ${tech.map((t: any) => `- ${t.category} (${t.complexity}): ${t.changes.join(", "
 ## Identified Gaps
 ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recommendation: ${g.recommendation}`).join("\n") || "- No gaps identified"}
 `;
-  };
+  }, [feature?.title]);
 
   // Fetch feature and impact analysis data from Supabase
   useEffect(() => {
     let isMounted = true;
+
 
     const fetchFeatureData = async () => {
       if (!id) return;
@@ -130,10 +184,14 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
           status: featureData.status,
           priority: "medium", // You can derive this from impact analysis if needed
           sourceType,
+          file_url: featureData.file_url,
+          prd_link: featureData.prd_link,
+          figma_link: featureData.figma_link,
+          transcript_link: featureData.transcript_link,
         };
 
         setFeature(transformedFeature);
-        document.title = `${transformedFeature.title} - Impact Analysis | DOBB.ai`;
+        document.title = `${transformedFeature.title} - Impact Analysis | dobb.ai`;
 
         // If impact analysis exists, set it up
         if (featureData.impact_analysis?.[0]) {
@@ -277,128 +335,28 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
         return;
       }
 
-      // Only generate new user stories if none exist
-      const dummyUserStories = [
-        {
-          title: "User Registration with Email Verification",
-          description: "As a new user, I want to register with my email address and receive a verification email so that I can create a secure account.",
-          acceptance_criteria: [
-            "User can enter email and password",
-            "Verification email is sent within 30 seconds",
-            "User can click verification link to activate account",
-            "Invalid email formats are rejected with clear error messages"
-          ],
-          priority: "high",
-          estimated_hours: 8,
-          status: "draft",
-          test_cases: [
-            {
-              name: "Successful User Registration with Valid Email",
-              description: "Verify that a user can successfully register with a valid email address and strong password",
-              steps: [
-                "Navigate to registration page",
-                "Enter valid email address (test@example.com)",
-                "Enter strong password (minimum 8 characters, uppercase, lowercase, number, symbol)",
-                "Confirm password matches",
-                "Click 'Register' button",
-                "Verify success message is displayed",
-                "Check that verification email is sent"
-              ],
-              expected_result: "User account is created and verification email is sent",
-              priority: "high"
-            },
-            {
-              name: "Registration Fails with Invalid Email Format",
-              description: "Verify that registration fails when user enters invalid email format",
-              steps: [
-                "Navigate to registration page",
-                "Enter invalid email format (test@invalid)",
-                "Enter valid password",
-                "Click 'Register' button",
-                "Verify error message is displayed"
-              ],
-              expected_result: "Registration fails with appropriate error message",
-              priority: "high"
-            }
-          ]
-        },
-        {
-          title: "OAuth Integration for Social Login",
-          description: "As a user, I want to login using my Google or GitHub account so that I can access the platform quickly without creating a new password.",
-          acceptance_criteria: [
-            "Google OAuth integration works correctly",
-            "GitHub OAuth integration works correctly",
-            "User profile data is synced from OAuth provider",
-            "Account linking works for existing users"
-          ],
-          priority: "medium",
-          estimated_hours: 12,
-          status: "draft",
-          test_cases: [
-            {
-              name: "Google OAuth Integration Test",
-              description: "Test the Google OAuth login flow",
-              steps: [
-                "Click 'Login with Google' button",
-                "Verify Google OAuth popup opens",
-                "Complete Google authentication",
-                "Verify user is logged in with Google profile"
-              ],
-              expected_result: "User successfully logs in using Google OAuth",
-              priority: "high"
-            },
-            {
-              name: "GitHub OAuth Integration Test", 
-              description: "Test the GitHub OAuth login flow",
-              steps: [
-                "Click 'Login with GitHub' button",
-                "Verify GitHub OAuth popup opens",
-                "Complete GitHub authentication",
-                "Verify user is logged in with GitHub profile"
-              ],
-              expected_result: "User successfully logs in using GitHub OAuth",
-              priority: "medium"
-            }
-          ]
-        },
-        {
-          title: "User Profile Management",
-          description: "As a registered user, I want to update my profile information including name, avatar, and preferences so that I can personalize my experience.",
-          acceptance_criteria: [
-            "User can update display name",
-            "User can upload and crop avatar image",
-            "User can set email preferences",
-            "Changes are saved and reflected immediately"
-          ],
-          priority: "low",
-          estimated_hours: 6,
-          status: "draft",
-          test_cases: [
-            {
-              name: "Profile Information Update Test",
-              description: "Test updating user profile information",
-              steps: [
-                "Navigate to profile settings",
-                "Update display name",
-                "Save changes",
-                "Verify changes are reflected"
-              ],
-              expected_result: "Profile information is successfully updated",
-              priority: "medium"
-            }
-          ]
-        }
-      ];
+      console.log("feature?.file_url", feature?.file_url);
+      // Generate user stories using the API
+      const userStoriesResponse = await userStoriesAPI.generateUserStories({
+        featureId: String(id),
+        prdLink: feature?.file_url || feature?.prd_link || ""
+      });
+
+      if (!userStoriesResponse.success) {
+        throw new Error('Failed to generate user stories from API');
+      }
+
+      const generatedUserStories = userStoriesResponse.userStories;
 
       // Store user stories in Supabase (without test_cases)
-      const userStoriesToInsert = dummyUserStories.map(story => ({
+      const userStoriesToInsert = generatedUserStories.map((story: any) => ({
         feature_id: id,
         title: story.title,
         description: story.description,
-        acceptance_criteria: story.acceptance_criteria,
-        priority: story.priority,
-        estimated_hours: story.estimated_hours,
-        status: story.status
+        acceptance_criteria: story.acceptance_criteria || [],
+        priority: story.priority || 'medium',
+        estimated_hours: story.estimated_hours || 0,
+        status: story.status || 'draft'
       }));
 
       const { data: insertedStories, error } = await supabase
@@ -416,22 +374,24 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
         return;
       }
 
-      // Now insert test cases for each user story
+      // Now insert test cases for each user story (if they exist in the API response)
       const testCasesToInsert = [];
-      for (let i = 0; i < dummyUserStories.length; i++) {
-        const story = dummyUserStories[i];
+      for (let i = 0; i < generatedUserStories.length; i++) {
+        const story = generatedUserStories[i];
         const insertedStory = insertedStories[i];
         
-        for (const testCase of story.test_cases) {
-          testCasesToInsert.push({
-            user_story_id: insertedStory.id,
-            name: testCase.name,
-            description: testCase.description,
-            steps: testCase.steps,
-            expected_result: testCase.expected_result,
-            priority: testCase.priority,
-            status: 'not_executed'
-          });
+        if (story.test_cases && Array.isArray(story.test_cases)) {
+          for (const testCase of story.test_cases) {
+            testCasesToInsert.push({
+              user_story_id: insertedStory.id,
+              name: testCase.name,
+              description: testCase.description,
+              steps: testCase.steps || [],
+              expected_result: testCase.expected_result || '',
+              priority: testCase.priority || 'medium',
+              status: 'not_executed'
+            });
+          }
         }
       }
 
@@ -453,7 +413,7 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
 
       toast({
         title: "User Stories Generated",
-        description: `Successfully generated ${dummyUserStories.length} user stories with test cases`,
+        description: `Successfully generated ${generatedUserStories.length} user stories${testCasesToInsert.length > 0 ? ' with test cases' : ''}`,
       });
 
       // Navigate to stories page
@@ -488,10 +448,10 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
                 >
                   <ArrowLeft className="h-5 w-5 text-muted-foreground" />
                 </Button>
-                <div className="bg-gradient-primary p-2 rounded-lg shadow-elegant">
-                  <BarChart3 className="h-6 w-6 text-white" />
+                <div className="p-2 rounded-lg shadow-elegant">
+                  <img src="/head.png" alt="dobb.ai" className="size-10" />
                 </div>
-                <h1 className="text-xl font-bold text-foreground">DOBB.ai</h1>
+                <h1 className="text-xl font-bold text-foreground">dobb.ai</h1>
               </div>
               
               <div className="flex items-center space-x-4">
@@ -543,10 +503,10 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
                 >
                   <ArrowLeft className="h-5 w-5 text-muted-foreground" />
                 </Button>
-                <div className="bg-gradient-primary p-2 rounded-lg shadow-elegant">
-                  <BarChart3 className="h-6 w-6 text-white" />
+                 <div className="p-2 rounded-lg shadow-elegant">
+                  <img src="/head.png" alt="dobb.ai" className="size-10" />
                 </div>
-                <h1 className="text-xl font-bold text-foreground">DOBB.ai</h1>
+                <h1 className="text-xl font-bold text-foreground">dobb.ai</h1>
               </div>
             </div>
           </div>
@@ -566,9 +526,28 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 text-white relative overflow-hidden">
+      {/* Background Effects */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Mystical grid pattern */}
+        <div 
+          className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage: `
+              linear-gradient(rgba(147, 51, 234, 0.3) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(147, 51, 234, 0.3) 1px, transparent 1px)
+            `,
+            backgroundSize: '60px 60px'
+          }}
+        />
+        
+        {/* Floating orbs */}
+        <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-gradient-to-br from-purple-600/30 to-amber-500/20 rounded-full blur-2xl animate-pulse" />
+        <div className="absolute bottom-1/3 right-1/4 w-24 h-24 bg-gradient-to-br from-amber-500/30 to-purple-600/20 rounded-full blur-xl animate-pulse" style={{animationDelay: '2s'}} />
+      </div>
+
       {/* Top Bar */}
-      <header className="border-b border-border bg-surface-elevated">
+      <header className="relative z-10 border-b border-purple-500/30 bg-gradient-to-r from-slate-900/90 to-purple-950/90 backdrop-blur-sm">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -576,29 +555,29 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
                 variant="ghost" 
                 size="icon" 
                 onClick={() => navigate('/features')}
-                className="hover:bg-surface-subtle"
+                className="hover:bg-purple-500/20 text-purple-200 hover:text-white"
               >
-                <ArrowLeft className="h-5 w-5 text-muted-foreground" />
+                <ArrowLeft className="h-5 w-5" />
               </Button>
-              <div className="bg-gradient-primary p-2 rounded-lg shadow-elegant">
-                <BarChart3 className="h-6 w-6 text-white" />
+              <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-amber-500 rounded-lg flex items-center justify-center">
+                <img src="/head.png" alt="dobb.ai" className="w-5 h-5 rounded" />
               </div>
-              <h1 className="text-xl font-bold text-foreground">DOBB.ai</h1>
+              <h1 className="text-xl font-bold bg-gradient-to-r from-purple-300 to-amber-300 bg-clip-text text-transparent">DOBB.ai</h1>
             </div>
             
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="icon" className="hover:bg-surface-subtle">
-                <Settings className="h-5 w-5 text-muted-foreground" />
+              <Button variant="ghost" size="icon" className="hover:bg-purple-500/20 text-purple-200 hover:text-white">
+                <Settings className="h-5 w-5" />
               </Button>
-              <Button variant="ghost" size="icon" className="hover:bg-surface-subtle">
-                <User className="h-5 w-5 text-muted-foreground" />
+              <Button variant="ghost" size="icon" className="hover:bg-purple-500/20 text-purple-200 hover:text-white">
+                <User className="h-5 w-5" />
               </Button>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-6 py-8">
+      <main className="relative z-10 container mx-auto px-6 py-8">
         <div className="max-w-6xl mx-auto">
           {/* Breadcrumbs */}
           <div className="mb-6">
@@ -649,15 +628,15 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
           </div>
 
           {/* AI Summary */}
-          <Card className="bg-surface-elevated border border-border mb-8">
+          <Card className="bg-gradient-to-br from-purple-900/30 to-slate-900/30 border-purple-500/30 backdrop-blur-sm mb-8">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <CheckCircle2 className="h-5 w-5 text-green-500" />
-                <span>AI-Generated Summary</span>
+                <CheckCircle2 className="h-5 w-5 text-green-400" />
+                <span className="text-white">AI-Generated Summary</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-foreground leading-relaxed">
+              <p className="text-purple-100 leading-relaxed">
                 {aiSummary || "Summary will appear once analysis completes."}
               </p>
             </CardContent>
@@ -666,166 +645,219 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
           {/* Impact Report */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             {/* Impacted Modules - Product Perspective */}
-            <Card className="bg-surface-elevated border border-border">
+            <Card className="bg-gradient-to-br from-purple-900/30 to-slate-900/30 border-purple-500/30 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
-                  <Code className="h-5 w-5 text-blue-500" />
-                  <span>Impacted Modules</span>
+                  <Code className="h-5 w-5 text-blue-400" />
+                  <span className="text-white">Impacted Modules</span>
                 </CardTitle>
-                <CardDescription>Business and product areas affected by this feature</CardDescription>
+                <CardDescription className="text-purple-200">Business and product areas affected by this feature</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Users className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">User Management</span>
+                  {impactAnalysis?.impactedModules?.length > 0 ? (
+                    impactAnalysis.impactedModules.map((module: any, index: number) => {
+                      const IconComponent = getIconForModule(module.name);
+                      const badgeVariant = getImpactBadgeVariant(module.impact);
+                      
+                      return (
+                        <div key={index} className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <IconComponent className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm font-medium">{module.name}</span>
+                            </div>
+                            <Badge 
+                              {...(typeof badgeVariant === 'object' ? badgeVariant : { variant: badgeVariant })}
+                              className={`text-xs ${typeof badgeVariant === 'object' ? badgeVariant.className : ''}`}
+                            >
+                              {module.impact}
+                            </Badge>
+                          </div>
+                          <div className="pl-6 text-xs text-muted-foreground">
+                            <p>{module.description}</p>
+                            {module.effort && (
+                              <p className="mt-1 text-primary">Effort: {module.effort}</p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="text-center py-6 text-muted-foreground">
+                      <Code className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No impacted modules data available</p>
                     </div>
-                    <Badge variant="destructive" className="text-xs">High</Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Database className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">User Onboarding</span>
-                    </div>
-                    <Badge variant="destructive" className="text-xs">High</Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Globe className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">Account Settings</span>
-                    </div>
-                    <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs">Medium</Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">Analytics & Reporting</span>
-                    </div>
-                    <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">Low</Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Settings className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">Admin Dashboard</span>
-                    </div>
-                    <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs">Medium</Badge>
-                  </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
 
             {/* Technical Impacts - Technical/Coding Perspective */}
-            <Card className="bg-surface-elevated border border-border">
+            <Card className="bg-gradient-to-br from-purple-900/30 to-slate-900/30 border-purple-500/30 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
-                  <Cpu className="h-5 w-5 text-yellow-500" />
-                  <span>Technical Impacts</span>
+                  <Cpu className="h-5 w-5 text-yellow-400" />
+                  <span className="text-white">Technical Impacts</span>
                 </CardTitle>
-                <CardDescription>Technical components and code modules affected</CardDescription>
+                <CardDescription className="text-purple-200">Technical components and code modules affected</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Database className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">User Schema Tables</span>
+                  {impactAnalysis?.technicalImpacts?.length > 0 ? (
+                    <>
+                      {impactAnalysis.technicalImpacts.map((impact: any, index: number) => {
+                        const badgeVariant = getComplexityBadgeVariant(impact.complexity);
+                        const categoryIcon = impact.category.toLowerCase().includes('database') ? Database :
+                                           impact.category.toLowerCase().includes('api') ? Globe :
+                                           impact.category.toLowerCase().includes('frontend') ? Code :
+                                           impact.category.toLowerCase().includes('security') ? Settings : Cpu;
+                        
+                        return (
+                          <div key={index} className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-2">
+                                {React.createElement(categoryIcon, { className: "h-4 w-4 text-muted-foreground" })}
+                                <span className="text-sm font-medium">{impact.category}</span>
+                              </div>
+                              <Badge 
+                                {...(typeof badgeVariant === 'object' ? badgeVariant : { variant: badgeVariant })}
+                                className={`text-xs ${typeof badgeVariant === 'object' ? badgeVariant.className : ''}`}
+                              >
+                                {impact.complexity}
+                              </Badge>
+                            </div>
+                            <div className="pl-6 space-y-1">
+                              {impact.changes?.map((change: string, changeIndex: number) => (
+                                <div key={changeIndex} className="text-xs text-muted-foreground flex items-start space-x-1">
+                                  <span className="text-primary mt-1">•</span>
+                                  <span>{change}</span>
+                                </div>
+                              ))}
+                              {impact.estimatedDowntime && (
+                                <div className="text-xs text-yellow-400 mt-1">
+                                  Downtime: {impact.estimatedDowntime}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                      
+                      {/* Summary Stats */}
+                      <div className="pt-2 border-t border-border">
+                        <div className="grid grid-cols-2 gap-4 text-xs text-muted-foreground">
+                          <span>Categories: {impactAnalysis.technicalImpacts.length}</span>
+                          <span>Avg Complexity: {impactAnalysis.technicalImpacts.reduce((acc: number, impact: any) => {
+                            const complexityScore = impact.complexity?.toLowerCase() === 'critical' ? 5 :
+                                                   impact.complexity?.toLowerCase() === 'high' ? 4 :
+                                                   impact.complexity?.toLowerCase() === 'medium' ? 3 :
+                                                   impact.complexity?.toLowerCase() === 'low' ? 2 : 1;
+                            return acc + complexityScore;
+                          }, 0) / impactAnalysis.technicalImpacts.length}/5</span>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center py-6 text-muted-foreground">
+                      <Cpu className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No technical impacts data available</p>
                     </div>
-                    <Badge variant="destructive" className="text-xs">Critical</Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Code className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">Auth Service Layer</span>
-                    </div>
-                    <Badge variant="destructive" className="text-xs">High</Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Globe className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">API Gateway Middleware</span>
-                    </div>
-                    <Badge variant="destructive" className="text-xs">High</Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Code className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">React Auth Components</span>
-                    </div>
-                    <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs">Medium</Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Database className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">Session Management</span>
-                    </div>
-                    <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs">Medium</Badge>
-                  </div>
-                  <div className="pt-2 border-t border-border">
-                    <div className="grid grid-cols-2 gap-4 text-xs text-muted-foreground">
-                      <span>Complexity: 8.5/10</span>
-                      <span>Effort: 120-150h</span>
-                    </div>
-                  </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
 
             {/* Identified Gaps - Detailed by Category */}
-            <Card className="bg-surface-elevated border border-border">
+            <Card className="bg-gradient-to-br from-purple-900/30 to-slate-900/30 border-purple-500/30 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
-                  <AlertTriangle className="h-5 w-5 text-red-500" />
-                  <span>Identified Gaps</span>
+                  <AlertTriangle className="h-5 w-5 text-red-400" />
+                  <span className="text-white">Identified Gaps</span>
                 </CardTitle>
-                <CardDescription>Technical feasibility concerns and missing requirements</CardDescription>
+                <CardDescription className="text-purple-200">Technical feasibility concerns and missing requirements</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {/* Security Gaps */}
-                  <div>
-                    <h4 className="text-sm font-semibold text-red-400 mb-2">Security</h4>
-                    <div className="space-y-2 pl-3 border-l-2 border-red-500/30">
-                      <div className="text-xs">
-                        <p className="text-foreground font-medium">• Penetration Testing Protocol</p>
-                        <p className="text-muted-foreground">Comprehensive security audit including OWASP top 10 vulnerabilities, SQL injection, and XSS testing</p>
-                      </div>
-                      <div className="text-xs">
-                        <p className="text-foreground font-medium">• Multi-factor Authentication</p>
-                        <p className="text-muted-foreground">Integration with TOTP, SMS, and hardware security keys for enhanced account protection</p>
-                      </div>
-                    </div>
-                  </div>
+                  {impactAnalysis?.identifiedGaps?.length > 0 ? (
+                    (() => {
+                      // Group gaps by type
+                      const groupedGaps = impactAnalysis.identifiedGaps.reduce((acc: any, gap: any) => {
+                        const type = gap.type || 'Other';
+                        if (!acc[type]) acc[type] = [];
+                        acc[type].push(gap);
+                        return acc;
+                      }, {});
 
-                  {/* Monitoring Gaps */}
-                  <div>
-                    <h4 className="text-sm font-semibold text-yellow-400 mb-2">Monitoring</h4>
-                    <div className="space-y-2 pl-3 border-l-2 border-yellow-500/30">
-                      <div className="text-xs">
-                        <p className="text-foreground font-medium">• Authentication Analytics</p>
-                        <p className="text-muted-foreground">Real-time monitoring of failed login attempts, suspicious patterns, and geographic anomalies</p>
-                      </div>
-                      <div className="text-xs">
-                        <p className="text-foreground font-medium">• Performance Metrics</p>
-                        <p className="text-muted-foreground">Response time tracking, database query optimization, and load balancing effectiveness</p>
-                      </div>
-                    </div>
-                  </div>
+                      const getTypeColor = (type: string) => {
+                        switch (type.toLowerCase()) {
+                          case 'security': return 'text-red-400 border-red-500/30';
+                          case 'performance': return 'text-yellow-400 border-yellow-500/30';
+                          case 'testing': return 'text-blue-400 border-blue-500/30';
+                          case 'compliance': return 'text-purple-400 border-purple-500/30';
+                          case 'documentation': return 'text-green-400 border-green-500/30';
+                          case 'monitoring': return 'text-orange-400 border-orange-500/30';
+                          default: return 'text-gray-400 border-gray-500/30';
+                        }
+                      };
 
-                  {/* Documentation Gaps */}
-                  <div>
-                    <h4 className="text-sm font-semibold text-blue-400 mb-2">Documentation</h4>
-                    <div className="space-y-2 pl-3 border-l-2 border-blue-500/30">
-                      <div className="text-xs">
-                        <p className="text-foreground font-medium">• API Documentation</p>
-                        <p className="text-muted-foreground">Complete OpenAPI specs, rate limiting details, and error code references for developer integration</p>
-                      </div>
-                      <div className="text-xs">
-                        <p className="text-foreground font-medium">• Security Guidelines</p>
-                        <p className="text-muted-foreground">Password policies, session management best practices, and compliance requirements documentation</p>
-                      </div>
+                      return Object.entries(groupedGaps).map(([type, gaps]: [string, any]) => (
+                        <div key={type}>
+                          <h4 className={`text-sm font-semibold mb-2 ${getTypeColor(type).split(' ')[0]}`}>
+                            {type}
+                          </h4>
+                          <div className={`space-y-3 pl-3 border-l-2 ${getTypeColor(type).split(' ')[1]}`}>
+                            {gaps.map((gap: any, index: number) => {
+                              const priorityBadgeVariant = getPriorityBadgeVariant(gap.priority);
+                              
+                              return (
+                                <div key={index} className="space-y-2">
+                                  <div className="flex items-start justify-between">
+                                    <div className="flex-1">
+                                      <div className="flex items-center space-x-2 mb-1">
+                                        <p className="text-foreground font-medium text-xs">
+                                          • {gap.title || gap.type}
+                                        </p>
+                                        <Badge 
+                                          {...(typeof priorityBadgeVariant === 'object' ? priorityBadgeVariant : { variant: priorityBadgeVariant })}
+                                          className={`text-xs ${typeof priorityBadgeVariant === 'object' ? priorityBadgeVariant.className : ''}`}
+                                        >
+                                          {gap.priority}
+                                        </Badge>
+                                        {gap.blocker && (
+                                          <Badge variant="destructive" className="text-xs">
+                                            Blocker
+                                          </Badge>
+                                        )}
+                                      </div>
+                                      <p className="text-muted-foreground text-xs mb-1">
+                                        {gap.description}
+                                      </p>
+                                      {gap.recommendation && (
+                                        <p className="text-primary text-xs">
+                                          <span className="font-medium">Recommendation:</span> {gap.recommendation}
+                                        </p>
+                                      )}
+                                      {gap.estimatedEffort && (
+                                        <p className="text-muted-foreground text-xs mt-1">
+                                          <span className="font-medium">Effort:</span> {gap.estimatedEffort}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ));
+                    })()
+                  ) : (
+                    <div className="text-center py-6 text-muted-foreground">
+                      <AlertTriangle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No identified gaps data available</p>
                     </div>
-                  </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -835,7 +867,7 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
               onClick={() => setShowRefineModal(true)}
-              className="bg-gradient-primary text-white hover:opacity-90 transition-all duration-300"
+              className="bg-gradient-to-r from-purple-600 to-amber-600 hover:from-purple-700 hover:to-amber-700 text-white transition-all duration-300 shadow-2xl shadow-purple-500/25"
               size="lg"
               disabled={isReanalyzing}
             >
@@ -845,7 +877,7 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
             <Button 
               onClick={handleReanalyze}
               variant="outline"
-              className="border-yellow-500 text-yellow-400 hover:bg-yellow-500 hover:text-white transition-all duration-300"
+              className="border-amber-500/50 text-amber-300 hover:bg-amber-500/20 hover:border-amber-400 transition-all duration-300"
               size="lg"
               disabled={isReanalyzing}
             >
@@ -859,7 +891,7 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
             <Button 
               onClick={handleGenerateUserStories}
               variant="outline"
-              className="border-primary text-primary hover:bg-primary hover:text-white transition-all duration-300"
+              className="border-purple-500/50 text-purple-300 hover:bg-purple-500/20 hover:border-purple-400 transition-all duration-300"
               size="lg"
               disabled={isReanalyzing || isGeneratingStories}
             >
@@ -876,7 +908,7 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
 
       {/* Refine PRD Modal */}
       <Dialog open={showRefineModal} onOpenChange={setShowRefineModal}>
-        <DialogContent className="max-w-4xl max-h-[80vh] bg-surface-elevated border border-border">
+        <DialogContent className="max-w-4xl max-h-[80vh] bg-gradient-to-br from-slate-900 to-purple-950 border-purple-500/30 text-white">
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2">
               <FileEdit className="h-5 w-5 text-primary" />
@@ -891,7 +923,7 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
             <Textarea
               value={refinedPRD}
               onChange={(e) => setRefinedPRD(e.target.value)}
-              className="min-h-[400px] resize-none bg-surface-subtle border-border font-mono text-sm"
+              className="min-h-[400px] resize-none bg-purple-900/30 border-purple-500/30 font-mono text-sm text-white placeholder:text-purple-300"
               placeholder="Refined PRD content will appear here..."
             />
           </div>
@@ -902,7 +934,7 @@ ${gaps.map((g: any) => `- [${g.priority}] ${g.type}: ${g.description}\n  Recomme
             </Button>
             <Button 
               onClick={handleRefineAccept}
-              className="bg-gradient-primary text-white hover:opacity-90"
+              className="bg-gradient-to-r from-purple-600 to-amber-600 hover:from-purple-700 hover:to-amber-700 text-white"
             >
               Accept Changes
             </Button>

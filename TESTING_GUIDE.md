@@ -53,7 +53,7 @@ curl http://localhost:3001/health
 2. **Frontend Loading**
 ```bash
 # Open http://localhost:5173
-# Should see: "DOBB.ai" landing page
+# Should see: "dobb.ai" landing page
 ```
 
 3. **Navigation Test**
@@ -92,12 +92,6 @@ Framework: Playwright
 Expected: Successfully navigates and clicks
 ```
 
-#### Puppeteer Test
-```bash
-Task: "Navigate to playwright.dev and click on 'Docs'"  
-Framework: Puppeteer
-Expected: Same result as Playwright
-```
 
 ### ✅ Error Handling Tests
 
@@ -318,4 +312,5 @@ Your system is working correctly if:
 ---
 
 **Ready to test? Start with:** `./start.sh` then visit http://localhost:5173! 🚀
+
 

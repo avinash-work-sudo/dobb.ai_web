@@ -5,7 +5,10 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { MessageCircle, Send, X, Bot, User, Minimize2 } from "lucide-react";
+import { MessageCircle, Send, X, Bot, User, Minimize2, Zap, Clock } from "lucide-react";
+import { chatbotAPI } from "@/api/impact-analysis";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface Message {
   id: string;
@@ -13,7 +16,61 @@ interface Message {
   sender: 'user' | 'bot';
   timestamp: Date;
   typing?: boolean;
+  streaming?: boolean;
 }
+
+// Markdown renderer component for chat messages
+const MarkdownMessage = ({ content, isStreaming }: { content: string; isStreaming?: boolean }) => {
+  return (
+    <div className="text-sm">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          // Customize markdown elements to fit chat style
+          p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+          h1: ({ children }) => <h1 className="text-lg font-bold mb-2">{children}</h1>,
+          h2: ({ children }) => <h2 className="text-base font-bold mb-2">{children}</h2>,
+          h3: ({ children }) => <h3 className="text-sm font-bold mb-1">{children}</h3>,
+          ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
+          ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
+          li: ({ children }) => <li className="text-sm">{children}</li>,
+          code: ({ children }) => (
+            <code className="bg-surface-subtle/50 px-1 py-0.5 rounded text-xs font-mono break-all">
+              {children}
+            </code>
+          ),
+          pre: ({ children }) => (
+            <pre className="bg-surface-subtle/50 p-2 rounded text-xs font-mono overflow-x-auto mb-2 max-w-full">
+              {children}
+            </pre>
+          ),
+          blockquote: ({ children }) => (
+            <blockquote className="border-l-2 border-primary/30 pl-2 italic mb-2">
+              {children}
+            </blockquote>
+          ),
+          strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+          em: ({ children }) => <em className="italic">{children}</em>,
+          a: ({ href, children }) => (
+            <a 
+              href={href} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="text-primary hover:underline"
+            >
+              {children}
+            </a>
+          ),
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+      {isStreaming && (
+        <span className="ml-1 animate-pulse text-primary">|</span>
+      )}
+    </div>
+  );
+};
 
 const ChatBot = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -21,7 +78,7 @@ const ChatBot = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: "Hi! I'm DOBB Assistant. I'm here to help you with your product development workflow. How can I assist you today?",
+      text: "Hi! I'm **DOBB Assistant**. I'm here to help you with your product development workflow.\n\nI can assist with:\n- 📋 **User Story Generation**\n- 🧪 **Test Case Creation**\n- 📊 **Impact Analysis**\n- 💡 **Feature Planning**\n\nHow can I assist you today?",
       sender: 'bot',
       timestamp: new Date(Date.now() - 5000)
     }
@@ -29,21 +86,72 @@ const ChatBot = () => {
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [hasNewMessage, setHasNewMessage] = useState(false);
+  const [conversationId, setConversationId] = useState<string | undefined>(undefined);
+  const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
+  const [instantMode, setInstantMode] = useState(false); // Toggle for instant vs streaming mode
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const streamingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const dummyResponses = [
-    "I can help you generate user stories, create test cases, and analyze feature impact. What would you like to work on?",
-    "Great question! DOBB.ai specializes in automating product development tasks. Would you like me to show you around?",
-    "I can assist with PRD analysis, user story generation, test case creation, and impact analysis. What's your current project about?",
-    "That's an interesting point! Let me help you break that down into actionable user stories.",
-    "I'd be happy to help you with that! DOBB.ai can streamline your entire product development lifecycle.",
-    "Absolutely! I can help you identify potential gaps and technical impacts for your feature requirements.",
-    "Good thinking! Let's work together to create comprehensive test cases for your user stories.",
-    "I understand your concern. DOBB.ai is designed to integrate seamlessly with your existing workflow tools like GitHub, Figma, and Atlassian."
-  ];
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    // Use requestAnimationFrame for better performance
+    requestAnimationFrame(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    });
+  };
+
+  const streamMessage = (messageId: string, fullText: string) => {
+    setStreamingMessageId(messageId);
+    let currentIndex = 0;
+    
+    // Optimize streaming by processing multiple characters at once
+    const getChunkSize = (text: string, index: number) => {
+      // Process words at a time for better readability and speed
+      const remainingText = text.substring(index);
+      const nextSpaceIndex = remainingText.indexOf(' ');
+      const nextNewlineIndex = remainingText.indexOf('\n');
+      
+      // Find the nearest word boundary
+      let chunkEnd = Math.min(
+        nextSpaceIndex === -1 ? remainingText.length : nextSpaceIndex + 1,
+        nextNewlineIndex === -1 ? remainingText.length : nextNewlineIndex + 1
+      );
+      
+      // For very long words, limit chunk size to prevent UI freezing
+      if (chunkEnd > 20) {
+        chunkEnd = Math.min(20, remainingText.length);
+      }
+      
+      // Minimum chunk size of 1 to ensure progress
+      return Math.max(1, chunkEnd);
+    };
+    
+    const streamNextChunk = () => {
+      if (currentIndex < fullText.length) {
+        const chunkSize = getChunkSize(fullText, currentIndex);
+        const displayText = fullText.substring(0, currentIndex + chunkSize);
+        
+        setMessages(prev => prev.map(msg => 
+          msg.id === messageId 
+            ? { ...msg, text: displayText, streaming: true }
+            : msg
+        ));
+        
+        currentIndex += chunkSize;
+        // Significantly reduced delay for faster streaming (5-15ms vs 20-50ms)
+        streamingTimeoutRef.current = setTimeout(streamNextChunk, 5 + Math.random() * 10);
+      } else {
+        // Streaming complete
+        setMessages(prev => prev.map(msg => 
+          msg.id === messageId 
+            ? { ...msg, streaming: false }
+            : msg
+        ));
+        setStreamingMessageId(null);
+      }
+    };
+    
+    streamNextChunk();
   };
 
   useEffect(() => {
@@ -57,6 +165,15 @@ const ChatBot = () => {
     }
   }, [isOpen, hasNewMessage]);
 
+  // Cleanup streaming timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (streamingTimeoutRef.current) {
+        clearTimeout(streamingTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
 
@@ -67,26 +184,100 @@ const ChatBot = () => {
       timestamp: new Date()
     };
 
+    const currentMessage = inputValue;
     setMessages(prev => [...prev, userMessage]);
     setInputValue("");
     setIsTyping(true);
 
-    // Simulate bot typing and response
-    setTimeout(() => {
-      const botResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        text: dummyResponses[Math.floor(Math.random() * dummyResponses.length)],
-        sender: 'bot',
-        timestamp: new Date()
-      };
+    try {
+      // Call the real chatbot API
+      const response = await chatbotAPI.sendMessage({
+        message: currentMessage,
+        conversationId: conversationId
+      });
+
+      // Update conversation ID if provided
+      if (response.conversationId) {
+        setConversationId(response.conversationId);
+      }
+
+      const botMessageId = (Date.now() + 1).toString();
       
-      setMessages(prev => [...prev, botResponse]);
-      setIsTyping(false);
+      if (instantMode) {
+        // Instant mode: display the full message immediately
+        const botResponse: Message = {
+          id: botMessageId,
+          text: response.response,
+          sender: 'bot',
+          timestamp: new Date(),
+          streaming: false
+        };
+        
+        setMessages(prev => [...prev, botResponse]);
+      } else {
+        // Streaming mode: stream the response
+        const botResponse: Message = {
+          id: botMessageId,
+          text: "", // Start with empty text for streaming
+          sender: 'bot',
+          timestamp: new Date(),
+          streaming: true
+        };
+        
+        // Add empty message first
+        setMessages(prev => [...prev, botResponse]);
+        
+        // Start streaming the response immediately for faster response
+        setTimeout(() => {
+          streamMessage(botMessageId, response.response);
+        }, 100); // Reduced delay for faster initial response
+      }
       
       if (!isOpen) {
         setHasNewMessage(true);
       }
-    }, 1000 + Math.random() * 2000);
+    } catch (error) {
+      console.error('Error sending message:', error);
+      
+      // Fallback response if API fails
+      const errorMessageId = (Date.now() + 1).toString();
+      const errorMessage = "I'm sorry, I'm having trouble connecting right now. Please try again later.";
+      
+      if (instantMode) {
+        // Instant mode: display error immediately
+        const errorResponse: Message = {
+          id: errorMessageId,
+          text: errorMessage,
+          sender: 'bot',
+          timestamp: new Date(),
+          streaming: false
+        };
+        
+        setMessages(prev => [...prev, errorResponse]);
+      } else {
+        // Streaming mode: stream the error message
+        const errorResponse: Message = {
+          id: errorMessageId,
+          text: "",
+          sender: 'bot',
+          timestamp: new Date(),
+          streaming: true
+        };
+        
+        setMessages(prev => [...prev, errorResponse]);
+        
+        // Stream the error message with reduced delay
+        setTimeout(() => {
+          streamMessage(errorMessageId, errorMessage);
+        }, 100);
+      }
+      
+      if (!isOpen) {
+        setHasNewMessage(true);
+      }
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -130,7 +321,7 @@ const ChatBot = () => {
       <div className={`fixed z-50 ${isMinimized ? 'bottom-6 right-6' : 'md:bottom-6 md:right-6 inset-x-4 bottom-4 md:inset-auto'}`}>
         <Card 
           className={`bg-surface-elevated border border-border shadow-elegant transition-all duration-300 ${
-            isMinimized ? 'w-80 h-16' : 'w-full h-[calc(100vh-2rem)] md:w-96 md:h-[500px]'
+            isMinimized ? 'w-80 h-16' : 'w-full max-h-[calc(100vh-2rem)] md:w-[500px] md:max-h-[650px] flex flex-col'
           }`}
         >
         <CardHeader 
@@ -184,8 +375,8 @@ const ChatBot = () => {
         </CardHeader>
 
         {!isMinimized && (
-          <CardContent className="p-0 flex flex-col h-[calc(500px-73px)] md:h-[calc(500px-73px)] h-[calc(100vh-8rem)]">
-            <ScrollArea className="flex-1 p-4">
+          <CardContent className="p-0 flex flex-col flex-1 min-h-0">
+            <ScrollArea className="flex-1 p-4 min-h-0">
               <div className="space-y-4">
                 {messages.map((message) => (
                   <div
@@ -206,13 +397,22 @@ const ChatBot = () => {
                       </AvatarFallback>
                     </Avatar>
                     <div 
-                      className={`max-w-[70%] rounded-xl px-3 py-2 ${
+                      className={`max-w-[70%] rounded-xl px-3 py-2 break-words ${
                         message.sender === 'user'
                           ? 'bg-primary text-primary-foreground ml-auto'
                           : 'bg-surface-subtle text-foreground'
                       }`}
                     >
-                      <p className="text-sm">{message.text}</p>
+                      {message.sender === 'bot' ? (
+                        <MarkdownMessage 
+                          content={message.text} 
+                          isStreaming={message.streaming}
+                        />
+                      ) : (
+                        <div className="text-sm">
+                          {message.text}
+                        </div>
+                      )}
                       <p className="text-xs opacity-70 mt-1">
                         {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </p>
@@ -227,7 +427,7 @@ const ChatBot = () => {
                         <Bot className="h-4 w-4" />
                       </AvatarFallback>
                     </Avatar>
-                    <div className="bg-surface-subtle text-foreground rounded-xl px-3 py-2 max-w-[70%]">
+                    <div className="bg-surface-subtle text-foreground rounded-xl px-3 py-2 max-w-[70%] break-words">
                       <div className="flex space-x-1">
                         <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" />
                         <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
@@ -240,7 +440,7 @@ const ChatBot = () => {
               <div ref={messagesEndRef} />
             </ScrollArea>
 
-            <div className="border-t border-border p-4">
+            <div className="border-t border-border p-4 flex-shrink-0">
               <div className="flex items-center space-x-2">
                 <Input
                   value={inputValue}
@@ -259,9 +459,30 @@ const ChatBot = () => {
                 </Button>
               </div>
               <div className="flex items-center justify-between mt-2">
-                <p className="text-xs text-muted-foreground">
-                  Powered by DOBB.ai
-                </p>
+                <div className="flex items-center space-x-3">
+                  <p className="text-xs text-muted-foreground">
+                    Powered by dobb.ai
+                  </p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setInstantMode(!instantMode)}
+                    className="h-6 px-2 text-xs hover:bg-surface-subtle"
+                    title={instantMode ? "Switch to streaming mode" : "Switch to instant mode"}
+                  >
+                    {instantMode ? (
+                      <>
+                        <Zap className="h-3 w-3 mr-1" />
+                        Instant
+                      </>
+                    ) : (
+                      <>
+                        <Clock className="h-3 w-3 mr-1" />
+                        Stream
+                      </>
+                    )}
+                  </Button>
+                </div>
                 <Badge variant="secondary" className="text-xs">
                   AI Assistant
                 </Badge>

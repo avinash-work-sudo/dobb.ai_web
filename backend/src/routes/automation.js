@@ -1,6 +1,5 @@
 import express from 'express';
 import { PlaywrightAutomationService } from '../services/PlaywrightAutomationService.js';
-import { PuppeteerAutomationService } from '../services/PuppeteerAutomationService.js';
 import { TestResultStorage } from '../services/TestResultStorage.js';
 import { broadcastAutomationUpdate } from '../server.js';
 import { v4 as uuidv4 } from 'uuid';
@@ -10,13 +9,12 @@ const router = express.Router();
 // POST /api/automation/run
 router.post('/run', async (req, res) => {
   const executionId = uuidv4();
-  
+
   try {
-    const { 
-      task, 
-      framework = 'playwright', 
+    const {
+      task,
       options = {},
-      requirements = [] 
+      requirements = []
     } = req.body;
 
     // Validate input
@@ -26,20 +24,11 @@ router.post('/run', async (req, res) => {
         executionId
       });
     }
-
-    if (!['playwright', 'puppeteer'].includes(framework)) {
-      return res.status(400).json({
-        error: 'Framework must be either "playwright" or "puppeteer"',
-        executionId
-      });
-    }
-
     // Create initial execution record
     await TestResultStorage.createExecution({
       id: executionId,
       testName: `Automation: ${task.substring(0, 50)}${task.length > 50 ? '...' : ''}`,
       taskDescription: task,
-      framework,
       status: 'running',
       startedAt: new Date(),
       browserInfo: JSON.stringify(options)
@@ -49,7 +38,7 @@ router.post('/run', async (req, res) => {
     broadcastAutomationUpdate(executionId, {
       status: 'started',
       task,
-      framework,
+      framework: 'playwright',
       timestamp: new Date().toISOString()
     });
 
@@ -58,18 +47,18 @@ router.post('/run', async (req, res) => {
       success: true,
       executionId,
       status: 'started',
-      framework,
+      framework: 'playwright',
       task,
       message: 'Automation started. Use WebSocket or polling to get updates.',
       statusUrl: `/api/automation/status/${executionId}`
     });
 
     // Run automation asynchronously
-    runAutomationAsync(executionId, task, framework, options, requirements);
+    runAutomationAsync(executionId, task, 'playwright', options, requirements);
 
   } catch (error) {
     console.error('Error starting automation:', error);
-    
+
     await TestResultStorage.updateExecution(executionId, {
       status: 'error',
       completedAt: new Date(),
@@ -94,7 +83,7 @@ router.post('/run', async (req, res) => {
 router.get('/status/:executionId', async (req, res) => {
   try {
     const { executionId } = req.params;
-    
+
     const execution = await TestResultStorage.getExecution(executionId);
     if (!execution) {
       return res.status(404).json({
@@ -127,7 +116,7 @@ router.get('/status/:executionId', async (req, res) => {
 router.post('/stop/:executionId', async (req, res) => {
   try {
     const { executionId } = req.params;
-    
+
     // Update execution status
     await TestResultStorage.updateExecution(executionId, {
       status: 'stopped',
@@ -167,13 +156,6 @@ router.get('/frameworks', (req, res) => {
         description: 'Multi-browser support (Chrome, Firefox, Safari, Edge)',
         features: ['Multi-browser', 'Mobile testing', 'Network interception', 'Auto-wait'],
         recommended: true
-      },
-      {
-        name: 'puppeteer',
-        displayName: 'Puppeteer', 
-        description: 'Chrome/Chromium focused with DevTools integration',
-        features: ['Chrome DevTools', 'PDF generation', 'Performance profiling', 'Lightweight'],
-        recommended: false
       }
     ],
     defaultOptions: {
@@ -188,15 +170,14 @@ router.get('/frameworks', (req, res) => {
 // Async function to run automation
 async function runAutomationAsync(executionId, task, framework, options, requirements) {
   const startTime = Date.now();
-  
+
   try {
-    // Choose automation service
-    const AutomationService = framework === 'playwright' 
-      ? PlaywrightAutomationService 
-      : PuppeteerAutomationService;
-    
-    const service = new AutomationService();
-    
+    // Use Playwright automation service
+    const service = new PlaywrightAutomationService();
+
+    // Set the execution ID for proper file naming
+    service.executionId = executionId;
+
     // Set up progress callback
     service.onProgress = (update) => {
       broadcastAutomationUpdate(executionId, {
@@ -209,9 +190,9 @@ async function runAutomationAsync(executionId, task, framework, options, require
     // Initialize and run
     await service.initialize(options);
     const result = await service.runTask(task);
-    
+
     const duration = Date.now() - startTime;
-    
+
     // Store results
     await TestResultStorage.updateExecution(executionId, {
       status: result.success ? 'passed' : 'failed',
@@ -252,9 +233,9 @@ async function runAutomationAsync(executionId, task, framework, options, require
 
   } catch (error) {
     console.error('Automation execution error:', error);
-    
+
     const duration = Date.now() - startTime;
-    
+
     await TestResultStorage.updateExecution(executionId, {
       status: 'error',
       completedAt: new Date(),

@@ -1,25 +1,21 @@
-import { useState, useEffect } from "react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { 
-  Settings, 
-  User, 
-  Search,
-  Filter,
+import {
   ArrowLeft,
-  BarChart3,
-  Clock,
-  AlertTriangle,
-  CheckCircle2,
-  TrendingUp,
-  FileText,
   Figma,
+  FileText,
+  Filter,
+  Search,
+  Settings,
+  TrendingUp,
+  User,
   Users
 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Features = () => {
   const navigate = useNavigate();
@@ -30,7 +26,7 @@ const Features = () => {
   useEffect(() => {
     const fetchFeatures = async () => {
       try {
-        // Fetch features with their impact analysis
+        // Fetch features with their impact analysis, ordered by latest first
         const { data: featuresData, error: featuresError } = await supabase
           .from('features')
           .select(`
@@ -49,7 +45,8 @@ const Features = () => {
               created_at,
               updated_at
             )
-          `);
+          `)
+          .order('created_at', { ascending: false });
 
         if (featuresError) {
           console.error('Error fetching features:', featuresError);
@@ -68,35 +65,22 @@ const Features = () => {
 
           // Extract information from the actual impact_json structure
           // Handle both summary as string and impactScore as object
-          let summary, impactScore, estimatedEffort, riskLevel;
+          let summary, riskLevel;
           
           if (typeof impactData.summary === 'string') {
             // When summary is a string, impactScore is an object
             summary = impactData.summary;
             const impactScoreObj = impactData.impactScore || {};
-            impactScore = impactScoreObj.totalImpactScore || 0;
-            estimatedEffort = impactScoreObj.estimatedEffort || "0 weeks";
             riskLevel = impactScoreObj.riskLevel || "Medium";
           } else {
             // When summary is an object (old format)
             const summaryObj = impactData.summary || impactData.impactScore || {};
             summary = "Impact analysis completed";
-            impactScore = summaryObj.totalImpactScore || 0;
-            estimatedEffort = summaryObj.estimatedEffort || "0 weeks";
             riskLevel = summaryObj.riskLevel || "Medium";
           }
           
-          // Convert estimated effort to hours (rough estimation: 1 week = 40 hours)
-          const estimatedHours = estimatedEffort.includes("week") 
-            ? parseInt(estimatedEffort) * 40 
-            : 0;
-
           // Derive priority from risk level
           const priority = riskLevel === "High" ? "high" : riskLevel === "Low" ? "low" : "medium";
-
-          // Calculate team size based on impacted modules (rough estimation)
-          const impactedModules = impactData.impactedModules || [];
-          const teamSize = Math.max(1, Math.min(5, impactedModules.length));
 
           return {
             id: feature.id,
@@ -105,10 +89,7 @@ const Features = () => {
             status: feature.status || "pending",
             priority: priority.toLowerCase(),
             lastAnalyzed: new Date(feature.updated_at).toISOString().split('T')[0],
-            impactScore: Math.round(impactScore * 10), // Convert to 0-100 scale
             sourceType,
-            teamSize,
-            estimatedHours,
           };
         }) || [];
 
@@ -168,9 +149,15 @@ const Features = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 overflow-hidden relative">
+      {/* Background Effects */}
+      <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:60px_60px]" />
+      <div className="absolute top-20 left-20 w-72 h-72 bg-purple-500/30 rounded-full blur-3xl" />
+      <div className="absolute bottom-20 right-20 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl" />
+      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-radial from-purple-500/10 to-transparent rounded-full blur-3xl" />
+
       {/* Top Bar */}
-      <header className="border-b border-border bg-surface-elevated">
+      <header className="border-b border-purple-500/30 bg-gradient-to-r from-purple-900/50 to-slate-900/50 backdrop-blur-sm relative z-10">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -178,34 +165,34 @@ const Features = () => {
                 variant="ghost" 
                 size="icon" 
                 onClick={() => navigate('/homepage')}
-                className="hover:bg-surface-subtle"
+                className="hover:bg-purple-500/20"
               >
-                <ArrowLeft className="h-5 w-5 text-muted-foreground" />
+                <ArrowLeft className="h-5 w-5 text-white" />
               </Button>
-              <div className="bg-gradient-primary p-2 rounded-lg shadow-elegant">
-                <BarChart3 className="h-6 w-6 text-white" />
+              <div className="p-2 rounded-lg shadow-elegant">
+                <img src="/head.png" alt="dobb.ai" className="size-10" />
               </div>
-              <h1 className="text-xl font-bold text-foreground">DOBB.ai</h1>
+              <h1 className="text-xl font-bold text-white">dobb.ai</h1>
             </div>
             
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="icon" className="hover:bg-surface-subtle">
-                <Settings className="h-5 w-5 text-muted-foreground" />
+              <Button variant="ghost" size="icon" className="hover:bg-purple-500/20">
+                <Settings className="h-5 w-5 text-white" />
               </Button>
-              <Button variant="ghost" size="icon" className="hover:bg-surface-subtle">
-                <User className="h-5 w-5 text-muted-foreground" />
+              <Button variant="ghost" size="icon" className="hover:bg-purple-500/20">
+                <User className="h-5 w-5 text-white" />
               </Button>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-6 py-8">
+      <main className="container mx-auto px-6 py-8 relative z-10">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">
+          <h1 className="text-3xl font-bold text-white mb-2">
             Analyzed Features
           </h1>
-          <p className="text-lg text-muted-foreground">
+          <p className="text-lg text-purple-200">
             Review and manage all your analyzed project features and their impact assessments
           </p>
         </div>
@@ -213,15 +200,15 @@ const Features = () => {
         {/* Search and Filter Bar */}
         <div className="flex items-center space-x-4 mb-8">
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-purple-300" />
             <Input
               placeholder="Search features..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-surface-subtle border-border"
+              className="pl-10 bg-purple-900/30 border-purple-500/30 text-white placeholder:text-purple-300"
             />
           </div>
-          <Button variant="outline" className="border-border hover:bg-surface-subtle">
+          <Button variant="outline" className="border-purple-500/30 bg-purple-900/30 text-white hover:bg-purple-500/20">
             <Filter className="h-4 w-4 mr-2" />
             Filter
           </Button>
@@ -231,25 +218,25 @@ const Features = () => {
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {Array.from({ length: 6 }).map((_, index) => (
-              <Card key={index} className="bg-surface-elevated border border-border">
+              <Card key={index} className="bg-gradient-to-br from-purple-900/30 to-slate-900/30 border-purple-500/30 backdrop-blur-sm">
                 <CardHeader className="pb-4">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center space-x-2">
-                      <div className="h-4 w-4 bg-surface-subtle rounded animate-pulse" />
-                      <div className="h-5 w-16 bg-surface-subtle rounded animate-pulse" />
+                      <div className="h-4 w-4 bg-purple-500/30 rounded animate-pulse" />
+                      <div className="h-5 w-16 bg-purple-500/30 rounded animate-pulse" />
                     </div>
                     <div className="flex space-x-2">
-                      <div className="h-5 w-12 bg-surface-subtle rounded animate-pulse" />
-                      <div className="h-5 w-16 bg-surface-subtle rounded animate-pulse" />
+                      <div className="h-5 w-12 bg-purple-500/30 rounded animate-pulse" />
+                      <div className="h-5 w-16 bg-purple-500/30 rounded animate-pulse" />
                     </div>
                   </div>
-                  <div className="h-6 w-3/4 bg-surface-subtle rounded animate-pulse mt-2" />
+                  <div className="h-6 w-3/4 bg-purple-500/30 rounded animate-pulse mt-2" />
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    <div className="h-4 w-full bg-surface-subtle rounded animate-pulse" />
-                    <div className="h-4 w-2/3 bg-surface-subtle rounded animate-pulse" />
-                    <div className="h-8 w-full bg-surface-subtle rounded animate-pulse" />
+                    <div className="h-4 w-full bg-purple-500/30 rounded animate-pulse" />
+                    <div className="h-4 w-2/3 bg-purple-500/30 rounded animate-pulse" />
+                    <div className="h-8 w-full bg-purple-500/30 rounded animate-pulse" />
                   </div>
                 </CardContent>
               </Card>
@@ -260,14 +247,14 @@ const Features = () => {
             {filteredFeatures.map((feature) => (
             <Card 
               key={feature.id} 
-              className="bg-surface-elevated border border-border hover:shadow-elegant transition-all duration-300 cursor-pointer"
+              className="bg-gradient-to-br from-purple-900/30 to-slate-900/30 border-purple-500/30 backdrop-blur-sm hover:shadow-elegant transition-all duration-300 cursor-pointer hover:bg-gradient-to-br hover:from-purple-900/40 hover:to-slate-900/40"
               onClick={() => navigate(`/feature/${feature.id}`)}
             >
               <CardHeader className="pb-4">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center space-x-2">
-                    {getSourceIcon(feature.sourceType)}
-                    <Badge variant="secondary" className="text-xs">
+                    <span className="text-white">{getSourceIcon(feature.sourceType)}</span>
+                    <Badge variant="secondary" className="text-xs bg-purple-900/50 text-purple-200 border-purple-500/30">
                       {feature.sourceType}
                     </Badge>
                   </div>
@@ -280,42 +267,18 @@ const Features = () => {
                     </Badge>
                   </div>
                 </div>
-                <CardTitle className="text-lg font-semibold text-foreground line-clamp-2">
+                <CardTitle className="text-lg font-semibold text-white line-clamp-2">
                   {feature.title}
                 </CardTitle>
               </CardHeader>
               
               <CardContent>
-                <CardDescription className="text-muted-foreground mb-4 line-clamp-3">
+                <CardDescription className="text-purple-200 mb-4 line-clamp-3 h-16 overflow-hidden">
                   {feature.description}
                 </CardDescription>
                 
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Impact Score</span>
-                    <div className="flex items-center space-x-2">
-                      <div className="w-16 bg-surface-subtle rounded-full h-2">
-                        <div 
-                          className="bg-gradient-primary h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${feature.impactScore}%` }}
-                        />
-                      </div>
-                      <span className="text-foreground font-medium">{feature.impactScore}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="flex items-center space-x-2">
-                      <Users className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">{feature.teamSize} devs</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">{feature.estimatedHours}h</span>
-                    </div>
-                  </div>
-                  
-                  <div className="text-xs text-muted-foreground pt-2 border-t border-border">
+                  <div className="text-xs text-purple-300 pt-2 border-t border-purple-500/30">
                     Last analyzed: {new Date(feature.lastAnalyzed).toLocaleDateString()}
                   </div>
                 </div>
@@ -327,11 +290,11 @@ const Features = () => {
 
         {!loading && filteredFeatures.length === 0 && (
           <div className="text-center py-12">
-            <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-foreground mb-2">
+            <TrendingUp className="h-12 w-12 text-purple-300 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-white mb-2">
               No features found
             </h3>
-            <p className="text-muted-foreground">
+            <p className="text-purple-200">
               {searchQuery ? "Try adjusting your search query" : "Start by analyzing your first feature"}
             </p>
           </div>

@@ -1,16 +1,42 @@
-import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
+
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator
+} from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  ArrowLeft,
+  BarChart3,
+  CheckCircle2,
+  Clock,
+  Edit,
+  Eye,
+  FileText,
+  Home,
+  Play,
+  RefreshCw,
+  Settings,
+  TestTube,
+  User,
+  XCircle
+} from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+
 
 interface TestCase {
   id: number;
@@ -21,30 +47,6 @@ interface TestCase {
   expectedResult: string;
   priority: string;
 }
-import {
-  Breadcrumb,
-  BreadcrumbEllipsis,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-import { 
-  ArrowLeft, 
-  BarChart3, 
-  Settings, 
-  User, 
-  Play,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  TestTube,
-  Eye,
-  Edit,
-  FileText,
-  Home
-} from "lucide-react";
 
 const StoryDetail = () => {
   const { id, storyId } = useParams();
@@ -56,118 +58,176 @@ const StoryDetail = () => {
   const [selectedTestCase, setSelectedTestCase] = useState<TestCase | null>(null);
   const [editingTestCase, setEditingTestCase] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [story, setStory] = useState<any>(null);
+  const [testCases, setTestCases] = useState<TestCase[]>([]);
+  const [featureTitle, setFeatureTitle] = useState("Feature Analysis");
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Mock story data
-  const story = {
-    id: 1,
-    title: "User Registration with Email Verification",
-    description: "As a new user, I want to register with my email address and verify it through a confirmation link so that I can access the platform securely.",
-    acceptanceCriteria: [
-      "User can enter valid email and password",
-      "System sends verification email within 30 seconds",
-      "User can click verification link to activate account",
-      "System prevents login until email is verified",
-      "User receives confirmation message upon successful verification"
-    ],
-    priority: "High",
-    estimatedHours: 16,
+  // Function to fetch story and test cases data from database
+  const fetchStoryData = useCallback(async (showRefreshIndicator = false) => {
+    if (!storyId) return;
+
+    if (showRefreshIndicator) {
+      setIsRefreshing(true);
+    }
+
+    try {
+      // Fetch user story from database
+      const { data: storyData, error: storyError } = await supabase
+        .from('user_stories')
+        .select('*')
+        .eq('id', storyId)
+        .single();
+
+      if (storyError) {
+        console.error('Error fetching user story:', storyError);
+        toast({
+          title: "Error",
+          description: "Failed to load user story data",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Fetch test cases for this story
+      const { data: testCasesData, error: testCasesError } = await supabase
+        .from('test_cases')
+        .select('*')
+        .eq('user_story_id', storyId)
+        .order('created_at', { ascending: true });
+
+      if (testCasesError) {
+        console.error('Error fetching test cases:', testCasesError);
+        toast({
+          title: "Error",
+          description: "Failed to load test cases",
+          variant: "destructive",
+        });
+      }
+
+      // Fetch feature info for breadcrumb
+      if (id) {
+        const { data: featureData, error: featureError } = await supabase
+          .from('features')
+          .select(`
+            id,
+            impact_analysis (
+              impact_json
+            )
+          `)
+          .eq('id', id)
+          .single();
+
+        if (!featureError && featureData?.impact_analysis?.[0]) {
+          const analysisData = featureData.impact_analysis[0].impact_json as any;
+          setFeatureTitle(analysisData?.title || `Feature ${id.slice(0, 8)}`);
+        }
+      }
+
+      // Transform story data for UI
+      const transformedStory = {
+        id: storyData.id,
+        title: storyData.title,
+        description: storyData.description,
+        acceptanceCriteria: storyData.acceptance_criteria || [],
+        priority: storyData.priority?.charAt(0).toUpperCase() + storyData.priority?.slice(1) || "Medium",
+        estimatedHours: storyData.estimated_hours || 0,
+      };
+
+      // Transform test cases data for UI
+      const transformedTestCases = (testCasesData || []).map((testCase: any) => ({
+        id: testCase.id,
+        name: testCase.name,
+        status: testCase.status || "not_executed",
+        description: testCase.description || "",
+        steps: testCase.steps || [],
+        expectedResult: testCase.expected_result || "",
+        priority: testCase.priority?.charAt(0).toUpperCase() + testCase.priority?.slice(1) || "Medium"
+      }));
+
+      setStory(transformedStory);
+      setTestCases(transformedTestCases);
+
+    } catch (error) {
+      console.error('Error fetching story data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load story data",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+      if (showRefreshIndicator) {
+        setIsRefreshing(false);
+      }
+    }
+  }, [storyId, id, toast]);
+
+  // Manual refresh function
+  const handleRefresh = async () => {
+    await fetchStoryData(true);
+    toast({
+      title: "Refreshed",
+      description: "Test case data has been refreshed",
+    });
   };
 
-  // Mock test cases data
-  const testCases = [
-    {
-      id: 1,
-      name: "Successful User Registration with Valid Email",
-      status: "passed",
-      description: "Verify that a user can successfully register with a valid email address and strong password",
-      steps: [
-        "Navigate to registration page",
-        "Enter valid email address (test@example.com)",
-        "Enter strong password (minimum 8 characters, uppercase, lowercase, number, symbol)",
-        "Confirm password matches",
-        "Click 'Register' button",
-        "Verify success message is displayed",
-        "Check that verification email is sent"
-      ],
-      expectedResult: "User account is created and verification email is sent",
-      priority: "High"
-    },
-    {
-      id: 2,
-      name: "Registration Fails with Invalid Email Format",
-      status: "failed",
-      description: "Verify that registration fails when user enters invalid email format",
-      steps: [
-        "Navigate to registration page",
-        "Enter invalid email format (test@invalid)",
-        "Enter valid password",
-        "Click 'Register' button",
-        "Verify error message is displayed"
-      ],
-      expectedResult: "Registration fails with appropriate error message",
-      priority: "High"
-    },
-    {
-      id: 3,
-      name: "Email Verification Link Functionality",
-      status: "not_executed",
-      description: "Verify that clicking the verification link activates the user account",
-      steps: [
-        "Complete successful registration",
-        "Check email inbox for verification message",
-        "Click verification link in email",
-        "Verify redirect to success page",
-        "Attempt to login with registered credentials",
-        "Verify successful login"
-      ],
-      expectedResult: "Account is activated and user can login successfully",
-      priority: "High"
-    },
-    {
-      id: 4,
-      name: "Weak Password Validation",
-      status: "passed",
-      description: "Verify that system rejects weak passwords during registration",
-      steps: [
-        "Navigate to registration page",
-        "Enter valid email address",
-        "Enter weak password (e.g., '123')",
-        "Attempt to register",
-        "Verify password strength error message"
-      ],
-      expectedResult: "Registration fails with password strength requirements message",
-      priority: "Medium"
-    },
-    {
-      id: 5,
-      name: "Duplicate Email Registration Prevention",
-      status: "not_executed",
-      description: "Verify that system prevents registration with already registered email",
-      steps: [
-        "Register with email address",
-        "Attempt to register again with same email",
-        "Verify error message about existing account",
-        "Check that no duplicate account is created"
-      ],
-      expectedResult: "System prevents duplicate registration and shows appropriate message",
-      priority: "Medium"
-    },
-    {
-      id: 6,
-      name: "Registration Form Field Validation",
-      status: "not_executed",
-      description: "Verify all form fields have proper validation",
-      steps: [
-        "Navigate to registration page",
-        "Submit form with empty fields",
-        "Verify required field error messages",
-        "Enter mismatched passwords",
-        "Verify password mismatch error"
-      ],
-      expectedResult: "All form validation works correctly",
-      priority: "Low"
-    }
-  ];
+  // Initial data fetch
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadData = async () => {
+      if (isMounted) {
+        await fetchStoryData();
+      }
+    };
+
+    loadData();
+    return () => { isMounted = false; };
+  }, [storyId, id, toast, fetchStoryData]);
+
+  // Refresh data when window gains focus or becomes visible (e.g., when returning from test runner)
+  useEffect(() => {
+    const handleFocus = async () => {
+      console.log('Window focused, refreshing test case data...');
+      await fetchStoryData();
+    };
+
+    const handleVisibilityChange = async () => {
+      if (!document.hidden) {
+        console.log('Page became visible, refreshing test case data...');
+        await fetchStoryData();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [fetchStoryData]);
+
+  // Update test cases state after successful edit
+  const updateTestCaseInState = (updatedTestCase: any) => {
+    setTestCases(prevTestCases => 
+      prevTestCases.map(tc => 
+        tc.id === updatedTestCase.id 
+          ? {
+              ...tc,
+              name: updatedTestCase.name,
+              description: updatedTestCase.description,
+              expectedResult: updatedTestCase.expected_result,
+              priority: updatedTestCase.priority?.charAt(0).toUpperCase() + updatedTestCase.priority?.slice(1) || "Medium",
+              status: updatedTestCase.status,
+              steps: updatedTestCase.steps
+            }
+          : tc
+      )
+    );
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -258,6 +318,9 @@ const StoryDetail = () => {
         return;
       }
 
+      // Update the test case in local state
+      updateTestCaseInState(editingTestCase);
+
       toast({
         title: "Test Case Updated",
         description: "Test case has been updated successfully",
@@ -296,10 +359,113 @@ const StoryDetail = () => {
     }
   };
 
+  // Show loading state while fetching data
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="border-b border-border bg-surface-elevated">
+          <div className="container mx-auto px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => navigate(`/feature/${id}/stories`)}
+                  className="hover:bg-surface-subtle"
+                >
+                  <ArrowLeft className="h-5 w-5 text-muted-foreground" />
+                </Button>
+                <div className="p-2 rounded-lg shadow-elegant">
+                  <img src="/head.png" alt="dobb.ai" className="size-10" />
+                </div>
+                <h1 className="text-xl font-bold text-foreground">dobb.ai</h1>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main className="container mx-auto px-6 py-8">
+          <div className="max-w-4xl mx-auto">
+            <Card className="bg-surface-elevated border border-border">
+              <CardContent className="pt-6">
+                <div className="text-center py-12">
+                  <div className="animate-spin h-16 w-16 text-primary mx-auto mb-6 border-4 border-primary border-t-transparent rounded-full"></div>
+                  <h3 className="text-xl font-semibold text-foreground mb-4">
+                    Loading User Story
+                  </h3>
+                  <p className="text-muted-foreground">
+                    Fetching story details and test cases...
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Show error state if story not found
+  if (!story) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="border-b border-border bg-surface-elevated">
+          <div className="container mx-auto px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => navigate(`/feature/${id}/stories`)}
+                  className="hover:bg-surface-subtle"
+                >
+                  <ArrowLeft className="h-5 w-5 text-muted-foreground" />
+                </Button>
+                <div className="p-2 rounded-lg shadow-elegant">
+                  <img src="/head.png" alt="dobb.ai" className="size-10" />
+                </div>
+                <h1 className="text-xl font-bold text-foreground">dobb.ai</h1>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main className="container mx-auto px-6 py-8">
+          <div className="max-w-4xl mx-auto text-center">
+            <h1 className="text-2xl font-bold text-foreground mb-4">User Story Not Found</h1>
+            <p className="text-muted-foreground mb-6">The requested user story could not be found.</p>
+            <Button onClick={() => navigate(`/feature/${id}/stories`)}>
+              Back to Stories
+            </Button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 text-white relative overflow-hidden">
+      {/* Background Effects */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Mystical grid pattern */}
+        <div 
+          className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage: `
+              linear-gradient(rgba(147, 51, 234, 0.3) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(147, 51, 234, 0.3) 1px, transparent 1px)
+            `,
+            backgroundSize: '60px 60px'
+          }}
+        />
+        
+        {/* Floating orbs */}
+        <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-gradient-to-br from-purple-600/30 to-amber-500/20 rounded-full blur-2xl animate-pulse" />
+        <div className="absolute bottom-1/3 right-1/4 w-24 h-24 bg-gradient-to-br from-amber-500/30 to-purple-600/20 rounded-full blur-xl animate-pulse" style={{animationDelay: '2s'}} />
+      </div>
+
       {/* Top Bar */}
-      <header className="border-b border-border bg-surface-elevated">
+      <header className="relative z-10 border-b border-purple-500/30 bg-gradient-to-r from-slate-900/90 to-purple-950/90 backdrop-blur-sm">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -307,29 +473,29 @@ const StoryDetail = () => {
                 variant="ghost" 
                 size="icon" 
                 onClick={() => navigate(`/feature/${id}/stories`)}
-                className="hover:bg-surface-subtle"
+                className="hover:bg-purple-500/20 text-purple-200 hover:text-white"
               >
-                <ArrowLeft className="h-5 w-5 text-muted-foreground" />
+                <ArrowLeft className="h-5 w-5" />
               </Button>
-              <div className="bg-gradient-primary p-2 rounded-lg shadow-elegant">
-                <BarChart3 className="h-6 w-6 text-white" />
+              <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-amber-500 rounded-lg flex items-center justify-center">
+                <img src="/head.png" alt="dobb.ai" className="w-5 h-5 rounded" />
               </div>
-              <h1 className="text-xl font-bold text-foreground">DOBB.ai</h1>
+              <h1 className="text-xl font-bold bg-gradient-to-r from-purple-300 to-amber-300 bg-clip-text text-transparent">dobb.ai</h1>
             </div>
             
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="icon" className="hover:bg-surface-subtle">
-                <Settings className="h-5 w-5 text-muted-foreground" />
+              <Button variant="ghost" size="icon" className="hover:bg-purple-500/20 text-purple-200 hover:text-white">
+                <Settings className="h-5 w-5" />
               </Button>
-              <Button variant="ghost" size="icon" className="hover:bg-surface-subtle">
-                <User className="h-5 w-5 text-muted-foreground" />
+              <Button variant="ghost" size="icon" className="hover:bg-purple-500/20 text-purple-200 hover:text-white">
+                <User className="h-5 w-5" />
               </Button>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-6 py-8">
+      <main className="relative z-10 container mx-auto px-6 py-8">
         <div className="max-w-7xl mx-auto">
           {/* Breadcrumbs */}
           <div className="mb-6">
@@ -359,7 +525,7 @@ const StoryDetail = () => {
                     onClick={() => navigate(`/feature/${id}`)}
                     className="cursor-pointer"
                   >
-                    User Authentication System
+                    {featureTitle}
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
@@ -394,25 +560,25 @@ const StoryDetail = () => {
             </h1>
             
             {/* Story Description */}
-            <Card className="bg-surface-elevated border border-border mb-6">
+            <Card className="bg-gradient-to-br from-purple-900/30 to-slate-900/30 border-purple-500/30 backdrop-blur-sm mb-6">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
-                  <FileText className="h-5 w-5 text-primary" />
-                  <span>Story Description</span>
+                  <FileText className="h-5 w-5 text-purple-300" />
+                  <span className="text-white">Story Description</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-foreground leading-relaxed mb-4">
+                <p className="text-purple-100 leading-relaxed mb-4">
                   {story.description}
                 </p>
                 
                 <div>
-                  <h4 className="text-sm font-semibold text-foreground mb-2">Acceptance Criteria:</h4>
+                  <h4 className="text-sm font-semibold text-white mb-2">Acceptance Criteria:</h4>
                   <ul className="space-y-1">
                     {story.acceptanceCriteria.map((criteria, index) => (
                       <li key={index} className="flex items-start space-x-2 text-sm">
-                        <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                        <span className="text-muted-foreground">{criteria}</span>
+                        <CheckCircle2 className="h-4 w-4 text-green-400 mt-0.5 flex-shrink-0" />
+                        <span className="text-purple-200">{criteria}</span>
                       </li>
                     ))}
                   </ul>
@@ -423,41 +589,41 @@ const StoryDetail = () => {
 
           {/* Test Cases Summary */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            <Card className="bg-surface-elevated border border-border">
+            <Card className="bg-gradient-to-br from-purple-900/30 to-slate-900/30 border-purple-500/30 backdrop-blur-sm">
               <CardContent className="pt-6">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">{testCases.length}</div>
-                  <div className="text-sm text-muted-foreground">Total Tests</div>
+                  <div className="text-2xl font-bold text-purple-300">{testCases.length}</div>
+                  <div className="text-sm text-purple-200">Total Tests</div>
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-surface-elevated border border-border">
+            <Card className="bg-gradient-to-br from-purple-900/30 to-slate-900/30 border-purple-500/30 backdrop-blur-sm">
               <CardContent className="pt-6">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-green-400">
                     {testCases.filter(test => test.status === "passed").length}
                   </div>
-                  <div className="text-sm text-muted-foreground">Passed</div>
+                  <div className="text-sm text-purple-200">Passed</div>
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-surface-elevated border border-border">
+            <Card className="bg-gradient-to-br from-purple-900/30 to-slate-900/30 border-purple-500/30 backdrop-blur-sm">
               <CardContent className="pt-6">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-red-400">
                     {testCases.filter(test => test.status === "failed").length}
                   </div>
-                  <div className="text-sm text-muted-foreground">Failed</div>
+                  <div className="text-sm text-purple-200">Failed</div>
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-surface-elevated border border-border">
+            <Card className="bg-gradient-to-br from-purple-900/30 to-slate-900/30 border-purple-500/30 backdrop-blur-sm">
               <CardContent className="pt-6">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-gray-400">
                     {testCases.filter(test => test.status === "not_executed").length}
                   </div>
-                  <div className="text-sm text-muted-foreground">Not Executed</div>
+                  <div className="text-sm text-purple-200">Not Executed</div>
                 </div>
               </CardContent>
             </Card>
@@ -468,7 +634,7 @@ const StoryDetail = () => {
             <div className="mb-6 text-center">
               <Button 
                 onClick={() => navigate(`/feature/${id}/stories/${storyId}/test-summary`)}
-                className="bg-gradient-primary text-white hover:opacity-90 transition-all duration-300"
+                className="bg-gradient-to-r from-purple-600 to-amber-600 hover:from-purple-700 hover:to-amber-700 text-white transition-all duration-300 shadow-2xl shadow-purple-500/25"
                 size="lg"
               >
                 <BarChart3 className="h-4 w-4 mr-2" />
@@ -492,8 +658,18 @@ const StoryDetail = () => {
             <div className="flex space-x-3">
               <Button 
                 variant="outline"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="border-purple-500/50 text-purple-300 hover:bg-purple-500/20"
+                title="Refresh test case data"
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                {isRefreshing ? 'Refreshing...' : 'Refresh'}
+              </Button>
+              <Button 
+                variant="outline"
                 disabled={selectedTestCases.length === 0}
-                className="border-border hover:bg-surface-subtle"
+                className="border-amber-500/50 text-amber-300 hover:bg-amber-500/20"
                 onClick={() => {
                   if (selectedTestCases.length > 0) {
                     const firstTestCase = selectedTestCases[0];
@@ -514,30 +690,45 @@ const StoryDetail = () => {
           </div>
 
           {/* Test Cases Table */}
-          <Card className="bg-surface-elevated border border-border">
+          <Card className="bg-gradient-to-br from-purple-900/30 to-slate-900/30 border-purple-500/30 backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <TestTube className="h-5 w-5 text-primary" />
-                <span>Test Cases</span>
+                <TestTube className="h-5 w-5 text-purple-300" />
+                <span className="text-white">Test Cases</span>
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-purple-200">
                 Generated test cases for validating the user story requirements
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-border">
+                  <TableRow className="border-purple-500/30">
                     <TableHead className="w-12"></TableHead>
-                    <TableHead className="text-foreground">Test Case</TableHead>
-                    <TableHead className="text-foreground w-24">Priority</TableHead>
-                    <TableHead className="text-foreground w-32">Status</TableHead>
-                    <TableHead className="text-foreground w-40">Actions</TableHead>
+                    <TableHead className="text-white">Test Case</TableHead>
+                    <TableHead className="text-white w-24">Priority</TableHead>
+                    <TableHead className="text-white w-32">Status</TableHead>
+                    <TableHead className="text-white w-40">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {testCases.map((testCase) => (
-                    <TableRow key={testCase.id} className="border-border hover:bg-surface-subtle">
+                  {testCases.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-12">
+                        <div className="flex flex-col items-center space-y-4">
+                          <TestTube className="h-12 w-12 text-muted-foreground opacity-50" />
+                          <div className="space-y-2">
+                            <h3 className="text-lg font-medium text-white">No Test Cases Found</h3>
+                            <p className="text-sm text-purple-200">
+                              No test cases have been generated for this user story yet.
+                            </p>
+                          </div>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    testCases.map((testCase) => (
+                    <TableRow key={testCase.id} className="border-purple-500/30 hover:bg-purple-500/10">
                       <TableCell>
                         <Checkbox
                           checked={selectedTestCases.includes(testCase.id)}
@@ -546,8 +737,8 @@ const StoryDetail = () => {
                       </TableCell>
                       <TableCell>
                         <div className="space-y-1">
-                          <h4 className="font-medium text-foreground">{testCase.name}</h4>
-                          <p className="text-sm text-muted-foreground line-clamp-2">
+                          <h4 className="font-medium text-white">{testCase.name}</h4>
+                          <p className="text-sm text-purple-200 line-clamp-2">
                             {testCase.description}
                           </p>
                         </div>
@@ -571,7 +762,7 @@ const StoryDetail = () => {
                             variant="ghost" 
                             size="sm"
                             onClick={() => handleViewTestCase(testCase)}
-                            className="hover:bg-surface-subtle"
+                            className="hover:bg-purple-500/20 text-purple-200"
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -579,7 +770,7 @@ const StoryDetail = () => {
                              variant="ghost" 
                              size="sm"
                              onClick={() => handleEditTestCase(testCase)}
-                             className="hover:bg-surface-subtle"
+                             className="hover:bg-purple-500/20 text-purple-200"
                              title="Edit test case"
                            >
                              <Edit className="h-4 w-4" />
@@ -588,7 +779,7 @@ const StoryDetail = () => {
                              variant="ghost" 
                              size="sm"
                              onClick={() => handleRunTest(testCase.id)}
-                             className="hover:bg-surface-subtle"
+                             className="hover:bg-purple-500/20 text-purple-200"
                              title="Run test case"
                            >
                              <Play className="h-4 w-4" />
@@ -596,7 +787,7 @@ const StoryDetail = () => {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))}
+                  )))}
                 </TableBody>
               </Table>
             </CardContent>
@@ -606,7 +797,7 @@ const StoryDetail = () => {
 
       {/* Test Steps Modal */}
       <Dialog open={showTestStepsModal} onOpenChange={setShowTestStepsModal}>
-        <DialogContent className="max-w-4xl max-h-[80vh] bg-surface-elevated border border-border">
+        <DialogContent className="max-w-4xl max-h-[80vh] bg-gradient-to-br from-slate-900 to-purple-950 border-purple-500/30 text-white">
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2">
               <TestTube className="h-5 w-5 text-primary" />
@@ -620,40 +811,40 @@ const StoryDetail = () => {
           {selectedTestCase && (
             <div className="space-y-6">
               <div>
-                <h4 className="text-sm font-semibold text-foreground mb-2">Description:</h4>
-                <p className="text-sm text-muted-foreground">{selectedTestCase.description}</p>
+                <h4 className="text-sm font-semibold text-white mb-2">Description:</h4>
+                <p className="text-sm text-purple-200">{selectedTestCase.description}</p>
               </div>
               
               <div>
-                <h4 className="text-sm font-semibold text-foreground mb-3">Test Steps:</h4>
+                <h4 className="text-sm font-semibold text-white mb-3">Test Steps:</h4>
                 <div className="space-y-3">
                   {selectedTestCase.steps.map((step: string, index: number) => (
-                    <div key={index} className="flex items-start space-x-3 p-3 bg-surface-subtle rounded-lg">
-                      <div className="bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-medium flex-shrink-0">
+                    <div key={index} className="flex items-start space-x-3 p-3 bg-purple-900/30 rounded-lg">
+                      <div className="bg-gradient-to-r from-purple-500 to-amber-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-medium flex-shrink-0">
                         {index + 1}
                       </div>
-                      <span className="text-sm text-foreground">{step}</span>
+                      <span className="text-sm text-white">{step}</span>
                     </div>
                   ))}
                 </div>
               </div>
               
               <div>
-                <h4 className="text-sm font-semibold text-foreground mb-2">Expected Result:</h4>
-                <p className="text-sm text-muted-foreground bg-surface-subtle p-3 rounded-lg">
+                <h4 className="text-sm font-semibold text-white mb-2">Expected Result:</h4>
+                <p className="text-sm text-purple-200 bg-purple-900/30 p-3 rounded-lg">
                   {selectedTestCase.expectedResult}
                 </p>
               </div>
               
-              <div className="flex items-center space-x-4 pt-4 border-t border-border">
+              <div className="flex items-center space-x-4 pt-4 border-t border-purple-500/30">
                 <div className="flex items-center space-x-2">
-                  <span className="text-sm font-medium text-foreground">Priority:</span>
+                  <span className="text-sm font-medium text-white">Priority:</span>
                   <Badge className={`text-xs border ${getPriorityColor(selectedTestCase.priority)}`}>
                     {selectedTestCase.priority}
                   </Badge>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span className="text-sm font-medium text-foreground">Status:</span>
+                  <span className="text-sm font-medium text-white">Status:</span>
                   <div className="flex items-center space-x-1">
                     {getStatusIcon(selectedTestCase.status)}
                     <Badge className={`text-xs border ${getStatusColor(selectedTestCase.status)}`}>
@@ -669,7 +860,7 @@ const StoryDetail = () => {
 
       {/* Test Case Edit Modal */}
       <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto bg-surface-elevated border border-border">
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto bg-gradient-to-br from-slate-900 to-purple-950 border-purple-500/30 text-white">
           <DialogHeader>
             <DialogTitle>Edit Test Case</DialogTitle>
             <DialogDescription>
@@ -685,7 +876,7 @@ const StoryDetail = () => {
                   id="testcase-name"
                   value={editingTestCase.name || ""}
                   onChange={(e) => setEditingTestCase({...editingTestCase, name: e.target.value})}
-                  className="bg-surface-subtle border-border"
+                  className="bg-purple-900/30 border-purple-500/30 text-white"
                   maxLength={200}
                 />
               </div>
@@ -696,7 +887,7 @@ const StoryDetail = () => {
                   id="testcase-description"
                   value={editingTestCase.description || ""}
                   onChange={(e) => setEditingTestCase({...editingTestCase, description: e.target.value})}
-                  className="bg-surface-subtle border-border min-h-[80px]"
+                  className="bg-purple-900/30 border-purple-500/30 min-h-[80px] text-white"
                   maxLength={1000}
                 />
               </div>
@@ -707,7 +898,7 @@ const StoryDetail = () => {
                   id="testcase-expected"
                   value={editingTestCase.expected_result || ""}
                   onChange={(e) => setEditingTestCase({...editingTestCase, expected_result: e.target.value})}
-                  className="bg-surface-subtle border-border min-h-[60px]"
+                  className="bg-purple-900/30 border-purple-500/30 min-h-[60px] text-white"
                   maxLength={500}
                 />
               </div>
@@ -719,7 +910,7 @@ const StoryDetail = () => {
                     id="testcase-priority"
                     value={editingTestCase.priority || "medium"}
                     onChange={(e) => setEditingTestCase({...editingTestCase, priority: e.target.value})}
-                    className="w-full px-3 py-2 text-sm rounded-md border border-border bg-surface-subtle text-foreground"
+                    className="w-full px-3 py-2 text-sm rounded-md border border-purple-500/30 bg-purple-900/30 text-white"
                   >
                     <option value="high">High</option>
                     <option value="medium">Medium</option>
@@ -733,7 +924,7 @@ const StoryDetail = () => {
                     id="testcase-status"
                     value={editingTestCase.status || "not_executed"}
                     onChange={(e) => setEditingTestCase({...editingTestCase, status: e.target.value})}
-                    className="w-full px-3 py-2 text-sm rounded-md border border-border bg-surface-subtle text-foreground"
+                    className="w-full px-3 py-2 text-sm rounded-md border border-purple-500/30 bg-purple-900/30 text-white"
                   >
                     <option value="not_executed">Not Executed</option>
                     <option value="passed">Passed</option>
@@ -754,7 +945,7 @@ const StoryDetail = () => {
                           newSteps[index] = e.target.value;
                           setEditingTestCase({...editingTestCase, steps: newSteps});
                         }}
-                        className="bg-surface-subtle border-border"
+                        className="bg-purple-900/30 border-purple-500/30 text-white"
                         placeholder={`Step ${index + 1}`}
                         maxLength={200}
                       />
@@ -794,7 +985,7 @@ const StoryDetail = () => {
             <Button 
               onClick={handleSaveTestCase}
               disabled={isSaving}
-              className="bg-gradient-primary text-white hover:opacity-90"
+              className="bg-gradient-to-r from-purple-600 to-amber-600 hover:from-purple-700 hover:to-amber-700 text-white"
             >
               {isSaving ? (
                 <>

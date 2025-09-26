@@ -13,6 +13,8 @@ import StoryDetail from "./pages/StoryDetail";
 import TestCaseRunner from "./pages/TestCaseRunner";
 import TestSummary from "./pages/TestSummary";
 import Dashboard from "./pages/Dashboard";
+import Pricing from "./pages/Pricing";
+import GradientCardDemo from "./pages/GradientCardDemo";
 import NotFound from "./pages/NotFound";
 import ChatBot from "./components/ChatBot";
 
@@ -35,6 +37,8 @@ const App = () => (
           <Route path="/feature/:id/stories/:storyId/test-case/:testCaseId" element={<TestCaseRunner />} />
           <Route path="/feature/:id/stories/:storyId/test-summary" element={<TestSummary />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/pricing" element={<Pricing />} />
+          <Route path="/gradient-card-demo" element={<GradientCardDemo />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

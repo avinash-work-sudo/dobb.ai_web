@@ -11,18 +11,18 @@ export async function initDatabase() {
   try {
     // Create database directory if it doesn't exist
     await mkdir(dirname(DATABASE_PATH), { recursive: true });
-    
+
     // Create database connection
     db = new sqlite3.Database(DATABASE_PATH);
-    
+
     // Promisify database methods
     db.runAsync = promisify(db.run.bind(db));
     db.getAsync = promisify(db.get.bind(db));
     db.allAsync = promisify(db.all.bind(db));
-    
+
     // Create tables
     await createTables();
-    
+
     console.log('✅ Database initialized successfully');
   } catch (error) {
     console.error('❌ Database initialization failed:', error);
@@ -37,7 +37,7 @@ async function createTables() {
       id TEXT PRIMARY KEY,
       test_name TEXT NOT NULL,
       task_description TEXT,
-      framework TEXT NOT NULL, -- 'playwright' or 'puppeteer'
+      framework TEXT NOT NULL DEFAULT 'playwright', -- 'playwright' only
       status TEXT NOT NULL CHECK (status IN ('running', 'passed', 'failed', 'error')),
       duration_ms INTEGER,
       started_at DATETIME,
@@ -97,10 +97,10 @@ async function createTables() {
   `);
 
   // Create indexes for better performance
-  await db.runAsync(`CREATE INDEX IF NOT EXISTS idx_executions_status ON test_executions (status)`);
-  await db.runAsync(`CREATE INDEX IF NOT EXISTS idx_executions_created ON test_executions (created_at)`);
-  await db.runAsync(`CREATE INDEX IF NOT EXISTS idx_steps_execution ON test_steps (execution_id)`);
-  await db.runAsync(`CREATE INDEX IF NOT EXISTS idx_artifacts_execution ON test_artifacts (execution_id)`);
+  await db.runAsync('CREATE INDEX IF NOT EXISTS idx_executions_status ON test_executions (status)');
+  await db.runAsync('CREATE INDEX IF NOT EXISTS idx_executions_created ON test_executions (created_at)');
+  await db.runAsync('CREATE INDEX IF NOT EXISTS idx_steps_execution ON test_steps (execution_id)');
+  await db.runAsync('CREATE INDEX IF NOT EXISTS idx_artifacts_execution ON test_artifacts (execution_id)');
 }
 
 export function getDatabase() {
@@ -121,4 +121,5 @@ export async function closeDatabase() {
     db = null;
   }
 }
+
 

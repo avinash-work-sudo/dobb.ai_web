@@ -1,40 +1,36 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import {
   Breadcrumb,
-  BreadcrumbEllipsis,
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
-  BreadcrumbSeparator,
+  BreadcrumbSeparator
 } from "@/components/ui/breadcrumb";
-import { 
-  ArrowLeft, 
-  BarChart3, 
-  Settings, 
-  User, 
-  Eye,
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  ArrowLeft,
+  Download,
   Edit,
+  Eye,
+  Home,
+  Loader2,
+  Settings,
   TestTube,
   Upload,
-  ExternalLink,
-  Download,
-  CheckCircle2,
-  Home,
-  Loader2
+  User
 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 
 const Stories = () => {
   console.log('Stories component loaded'); // Force rebuild
@@ -386,10 +382,10 @@ const Stories = () => {
                 >
                   <ArrowLeft className="h-5 w-5 text-muted-foreground" />
                 </Button>
-                <div className="bg-gradient-primary p-2 rounded-lg shadow-elegant">
-                  <BarChart3 className="h-6 w-6 text-white" />
+                <div className="p-2 rounded-lg shadow-elegant">
+                  <img src="/head.png" alt="dobb.ai" className="size-10" />
                 </div>
-                <h1 className="text-xl font-bold text-foreground">DOBB.ai</h1>
+                <h1 className="text-xl font-bold text-foreground">dobb.ai</h1>
               </div>
             </div>
           </div>
@@ -417,9 +413,28 @@ const Stories = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 text-white relative overflow-hidden">
+      {/* Background Effects */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Mystical grid pattern */}
+        <div 
+          className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage: `
+              linear-gradient(rgba(147, 51, 234, 0.3) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(147, 51, 234, 0.3) 1px, transparent 1px)
+            `,
+            backgroundSize: '60px 60px'
+          }}
+        />
+        
+        {/* Floating orbs */}
+        <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-gradient-to-br from-purple-600/30 to-amber-500/20 rounded-full blur-2xl animate-pulse" />
+        <div className="absolute bottom-1/3 right-1/4 w-24 h-24 bg-gradient-to-br from-amber-500/30 to-purple-600/20 rounded-full blur-xl animate-pulse" style={{animationDelay: '2s'}} />
+      </div>
+
       {/* Top Bar */}
-      <header className="border-b border-border bg-surface-elevated">
+      <header className="relative z-10 border-b border-purple-500/30 bg-gradient-to-r from-slate-900/90 to-purple-950/90 backdrop-blur-sm">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -427,29 +442,29 @@ const Stories = () => {
                 variant="ghost" 
                 size="icon" 
                 onClick={() => navigate(`/feature/${id}`)}
-                className="hover:bg-surface-subtle"
+                className="hover:bg-purple-500/20 text-purple-200 hover:text-white"
               >
-                <ArrowLeft className="h-5 w-5 text-muted-foreground" />
+                <ArrowLeft className="h-5 w-5" />
               </Button>
-              <div className="bg-gradient-primary p-2 rounded-lg shadow-elegant">
-                <BarChart3 className="h-6 w-6 text-white" />
+              <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-amber-500 rounded-lg flex items-center justify-center">
+                <img src="/head.png" alt="dobb.ai" className="w-5 h-5 rounded" />
               </div>
-              <h1 className="text-xl font-bold text-foreground">DOBB.ai</h1>
+              <h1 className="text-xl font-bold bg-gradient-to-r from-purple-300 to-amber-300 bg-clip-text text-transparent">DOBB.ai</h1>
             </div>
             
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="icon" className="hover:bg-surface-subtle">
-                <Settings className="h-5 w-5 text-muted-foreground" />
+              <Button variant="ghost" size="icon" className="hover:bg-purple-500/20 text-purple-200 hover:text-white">
+                <Settings className="h-5 w-5" />
               </Button>
-              <Button variant="ghost" size="icon" className="hover:bg-surface-subtle">
-                <User className="h-5 w-5 text-muted-foreground" />
+              <Button variant="ghost" size="icon" className="hover:bg-purple-500/20 text-purple-200 hover:text-white">
+                <User className="h-5 w-5" />
               </Button>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-6 py-8">
+      <main className="relative z-10 container mx-auto px-6 py-8">
         <div className="max-w-7xl mx-auto">
           {/* Breadcrumbs */}
           <div className="mb-6">
@@ -502,39 +517,39 @@ const Stories = () => {
 
           {/* Summary Stats */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            <Card className="bg-surface-elevated border border-border">
+            <Card className="bg-gradient-to-br from-purple-900/30 to-slate-900/30 border-purple-500/30 backdrop-blur-sm">
               <CardContent className="pt-6">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">{userStories.length}</div>
-                  <div className="text-sm text-muted-foreground">Total Stories</div>
+                  <div className="text-2xl font-bold text-purple-300">{userStories.length}</div>
+                  <div className="text-sm text-purple-200">Total Stories</div>
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-surface-elevated border border-border">
+            <Card className="bg-gradient-to-br from-purple-900/30 to-slate-900/30 border-purple-500/30 backdrop-blur-sm">
               <CardContent className="pt-6">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-green-400">
                     {userStories.reduce((sum, story) => sum + story.testCases, 0)}
                   </div>
-                  <div className="text-sm text-muted-foreground">Test Cases</div>
+                  <div className="text-sm text-purple-200">Test Cases</div>
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-surface-elevated border border-border">
+            <Card className="bg-gradient-to-br from-purple-900/30 to-slate-900/30 border-purple-500/30 backdrop-blur-sm">
               <CardContent className="pt-6">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-yellow-400">
+                  <div className="text-2xl font-bold text-amber-400">
                     {userStories.reduce((sum, story) => sum + story.estimatedHours, 0)}h
                   </div>
-                  <div className="text-sm text-muted-foreground">Estimated Effort</div>
+                  <div className="text-sm text-purple-200">Estimated Effort</div>
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-surface-elevated border border-border">
+            <Card className="bg-gradient-to-br from-purple-900/30 to-slate-900/30 border-purple-500/30 backdrop-blur-sm">
               <CardContent className="pt-6">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-blue-400">{selectedStories.length}</div>
-                  <div className="text-sm text-muted-foreground">Selected</div>
+                  <div className="text-sm text-purple-200">Selected</div>
                 </div>
               </CardContent>
             </Card>
@@ -555,7 +570,7 @@ const Stories = () => {
             <div className="flex space-x-3">
               <Button 
                 variant="outline"
-                className="border-border hover:bg-surface-subtle"
+                className="border-purple-500/50 text-purple-300 hover:bg-purple-500/20"
               >
                 <Download className="h-4 w-4 mr-2" />
                 Export CSV
@@ -563,7 +578,7 @@ const Stories = () => {
               <Button 
                 onClick={() => setShowJiraModal(true)}
                 disabled={selectedStories.length === 0}
-                className="bg-gradient-primary text-white hover:opacity-90"
+                className="bg-gradient-to-r from-purple-600 to-amber-600 hover:from-purple-700 hover:to-amber-700 text-white"
               >
                 <Upload className="h-4 w-4 mr-2" />
                 Import to JIRA ({selectedStories.length})
@@ -572,22 +587,22 @@ const Stories = () => {
           </div>
 
           {/* Stories Table */}
-          <Card className="bg-surface-elevated border border-border">
+          <Card className="bg-gradient-to-br from-purple-900/30 to-slate-900/30 border-purple-500/30 backdrop-blur-sm">
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-border">
+                  <TableRow className="border-purple-500/30">
                     <TableHead className="w-12"></TableHead>
-                    <TableHead className="text-foreground">Story</TableHead>
-                    <TableHead className="text-foreground w-24">Priority</TableHead>
-                    <TableHead className="text-foreground w-32">Test Cases</TableHead>
-                    <TableHead className="text-foreground w-32">Estimated Hours</TableHead>
-                    <TableHead className="text-foreground w-40">Actions</TableHead>
+                    <TableHead className="text-white">Story</TableHead>
+                    <TableHead className="text-white w-24">Priority</TableHead>
+                    <TableHead className="text-white w-32">Test Cases</TableHead>
+                    <TableHead className="text-white w-32">Estimated Hours</TableHead>
+                    <TableHead className="text-white w-40">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {userStories.map((story) => (
-                    <TableRow key={story.id} className="border-border hover:bg-surface-subtle">
+                    <TableRow key={story.id} className="border-purple-500/30 hover:bg-purple-500/10">
                       <TableCell>
                         <Checkbox
                           checked={selectedStories.includes(story.id)}
@@ -596,11 +611,11 @@ const Stories = () => {
                       </TableCell>
                       <TableCell>
                         <div className="space-y-1">
-                          <h4 className="font-medium text-foreground">{story.title}</h4>
-                          <p className="text-sm text-muted-foreground line-clamp-2">
+                          <h4 className="font-medium text-white">{story.title}</h4>
+                          <p className="text-sm text-purple-200 line-clamp-2">
                             {story.description}
                           </p>
-                          <div className="text-xs text-muted-foreground">
+                          <div className="text-xs text-purple-300">
                             {story.acceptanceCriteria} acceptance criteria
                           </div>
                         </div>
@@ -612,20 +627,20 @@ const Stories = () => {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center space-x-2">
-                          <TestTube className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-medium text-foreground">{story.testCases}</span>
+                          <TestTube className="h-4 w-4 text-purple-300" />
+                          <span className="font-medium text-white">{story.testCases}</span>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <span className="font-medium text-foreground">{story.estimatedHours}h</span>
+                        <span className="font-medium text-white">{story.estimatedHours}h</span>
                       </TableCell>
                       <TableCell>
                         <div className="flex space-x-2">
                           <Button 
                             variant="ghost" 
                             size="sm"
-                            onClick={() => navigate(`/feature/${id}/stories/${story.id}`)}
-                            className="hover:bg-surface-subtle"
+                            onClick={() => navigate(`/feature/${id}/stories/${story.dbId}`)}
+                            className="hover:bg-purple-500/20 text-purple-200"
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -633,15 +648,15 @@ const Stories = () => {
                             variant="ghost" 
                             size="sm"
                             onClick={() => handleEditStory(story)}
-                            className="hover:bg-surface-subtle"
+                            className="hover:bg-purple-500/20 text-purple-200"
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
                           <Button 
                             variant="ghost" 
                             size="sm"
-                            onClick={() => navigate(`/feature/${id}/stories/${story.id}/tests`)}
-                            className="hover:bg-surface-subtle"
+                            onClick={() => navigate(`/feature/${id}/stories/${story.dbId}/tests`)}
+                            className="hover:bg-purple-500/20 text-purple-200"
                           >
                             <TestTube className="h-4 w-4" />
                           </Button>
@@ -658,7 +673,7 @@ const Stories = () => {
 
       {/* JIRA Import Modal */}
       <Dialog open={showJiraModal} onOpenChange={setShowJiraModal}>
-        <DialogContent className="max-w-2xl bg-surface-elevated border border-border">
+        <DialogContent className="max-w-2xl bg-gradient-to-br from-slate-900 to-purple-950 border-purple-500/30 text-white">
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2">
               <Upload className="h-5 w-5 text-primary" />
@@ -677,21 +692,21 @@ const Stories = () => {
                 placeholder="https://hooks.zapier.com/hooks/catch/..."
                 value={jiraWebhookUrl}
                 onChange={(e) => setJiraWebhookUrl(e.target.value)}
-                className="bg-surface-subtle border-border"
+                className="bg-purple-900/30 border-purple-500/30 text-white placeholder:text-purple-300"
               />
               <p className="text-xs text-muted-foreground">
                 Create a Zapier webhook trigger connected to your JIRA workspace to import stories.
               </p>
             </div>
 
-            <div className="border border-border rounded-lg p-4 bg-surface-subtle">
-              <h4 className="font-medium text-foreground mb-3">Selected Stories ({selectedStories.length})</h4>
+            <div className="border border-purple-500/30 rounded-lg p-4 bg-purple-900/20">
+              <h4 className="font-medium text-white mb-3">Selected Stories ({selectedStories.length})</h4>
               <div className="space-y-2 max-h-32 overflow-y-auto">
                 {selectedStories.map(storyId => {
                   const story = userStories.find(s => s.id === storyId);
                   return story ? (
                     <div key={storyId} className="flex items-center justify-between text-sm">
-                      <span className="text-foreground truncate">{story.title}</span>
+                      <span className="text-white truncate">{story.title}</span>
                       <Badge className={`text-xs border ml-2 ${getPriorityColor(story.priority)}`}>
                         {story.priority}
                       </Badge>
@@ -709,7 +724,7 @@ const Stories = () => {
             <Button 
               onClick={handleJiraImport}
               disabled={isImporting || !jiraWebhookUrl}
-              className="bg-gradient-primary text-white hover:opacity-90"
+              className="bg-gradient-to-r from-purple-600 to-amber-600 hover:from-purple-700 hover:to-amber-700 text-white"
             >
               {isImporting ? (
                 <>
@@ -729,7 +744,7 @@ const Stories = () => {
 
       {/* Edit Story Modal */}
       <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto bg-surface-elevated border border-border">
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto bg-gradient-to-br from-slate-900 to-purple-950 border-purple-500/30 text-white">
           <DialogHeader>
             <DialogTitle>Edit User Story</DialogTitle>
             <DialogDescription>
@@ -745,7 +760,7 @@ const Stories = () => {
                   id="story-title"
                   value={editingStory.title || ""}
                   onChange={(e) => setEditingStory({...editingStory, title: e.target.value})}
-                  className="bg-surface-subtle border-border"
+                  className="bg-purple-900/30 border-purple-500/30 text-white"
                 />
               </div>
               
@@ -755,7 +770,7 @@ const Stories = () => {
                   id="story-description"
                   value={editingStory.description || ""}
                   onChange={(e) => setEditingStory({...editingStory, description: e.target.value})}
-                  className="bg-surface-subtle border-border min-h-[100px]"
+                  className="bg-purple-900/30 border-purple-500/30 min-h-[100px] text-white"
                 />
               </div>
 
@@ -766,7 +781,7 @@ const Stories = () => {
                     id="story-priority"
                     value={editingStory.priority || "Medium"}
                     onChange={(e) => setEditingStory({...editingStory, priority: e.target.value})}
-                    className="w-full px-3 py-2 text-sm rounded-md border border-border bg-surface-subtle text-foreground"
+                    className="w-full px-3 py-2 text-sm rounded-md border border-purple-500/30 bg-purple-900/30 text-white"
                   >
                     <option value="High">High</option>
                     <option value="Medium">Medium</option>
@@ -781,7 +796,7 @@ const Stories = () => {
                     type="number"
                     value={editingStory.estimatedHours || 0}
                     onChange={(e) => setEditingStory({...editingStory, estimatedHours: e.target.value})}
-                    className="bg-surface-subtle border-border"
+                    className="bg-purple-900/30 border-purple-500/30 text-white"
                   />
                 </div>
               </div>
@@ -798,7 +813,7 @@ const Stories = () => {
                           newCriteria[index] = e.target.value;
                           setEditingStory({...editingStory, acceptance_criteria: newCriteria});
                         }}
-                        className="bg-surface-subtle border-border"
+                        className="bg-purple-900/30 border-purple-500/30 text-white"
                         placeholder="Acceptance criteria"
                       />
                       <Button
@@ -838,7 +853,7 @@ const Stories = () => {
             <Button 
               onClick={handleSaveStory}
               disabled={isSaving}
-              className="bg-gradient-primary text-white hover:opacity-90"
+              className="bg-gradient-to-r from-purple-600 to-amber-600 hover:from-purple-700 hover:to-amber-700 text-white"
             >
               {isSaving ? (
                 <>

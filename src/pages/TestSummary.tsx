@@ -1,32 +1,30 @@
-import { useParams, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 import {
   Breadcrumb,
-  BreadcrumbEllipsis,
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
-  BreadcrumbSeparator,
+  BreadcrumbSeparator
 } from "@/components/ui/breadcrumb";
-import { 
-  ArrowLeft, 
-  BarChart3, 
-  Settings, 
-  User, 
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  ArrowLeft,
+  BarChart3,
   CheckCircle2,
-  XCircle,
   Clock,
-  TestTube,
   ExternalLink,
   FileText,
+  Home,
+  Settings,
   TrendingUp,
-  Home
+  User,
+  XCircle
 } from "lucide-react";
+import { useNavigate, useParams } from "react-router-dom";
+import { Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 const TestSummary = () => {
   const { id, storyId } = useParams();
@@ -160,9 +158,28 @@ const TestSummary = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 text-white relative overflow-hidden">
+      {/* Background Effects */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Mystical grid pattern */}
+        <div 
+          className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage: `
+              linear-gradient(rgba(147, 51, 234, 0.3) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(147, 51, 234, 0.3) 1px, transparent 1px)
+            `,
+            backgroundSize: '60px 60px'
+          }}
+        />
+        
+        {/* Floating orbs */}
+        <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-gradient-to-br from-purple-600/30 to-amber-500/20 rounded-full blur-2xl animate-pulse" />
+        <div className="absolute bottom-1/3 right-1/4 w-24 h-24 bg-gradient-to-br from-amber-500/30 to-purple-600/20 rounded-full blur-xl animate-pulse" style={{animationDelay: '2s'}} />
+      </div>
+
       {/* Top Bar */}
-      <header className="border-b border-border bg-surface-elevated">
+      <header className="relative z-10 border-b border-purple-500/30 bg-gradient-to-r from-slate-900/90 to-purple-950/90 backdrop-blur-sm">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -170,29 +187,29 @@ const TestSummary = () => {
                 variant="ghost" 
                 size="icon" 
                 onClick={() => navigate(`/feature/${id}/stories/${storyId}`)}
-                className="hover:bg-surface-subtle"
+                className="hover:bg-purple-500/20 text-purple-200 hover:text-white"
               >
-                <ArrowLeft className="h-5 w-5 text-muted-foreground" />
+                <ArrowLeft className="h-5 w-5" />
               </Button>
-              <div className="bg-gradient-primary p-2 rounded-lg shadow-elegant">
-                <BarChart3 className="h-6 w-6 text-white" />
+              <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-amber-500 rounded-lg flex items-center justify-center">
+                <img src="/head.png" alt="dobb.ai" className="w-5 h-5 rounded" />
               </div>
-              <h1 className="text-xl font-bold text-foreground">DOBB.ai</h1>
+              <h1 className="text-xl font-bold bg-gradient-to-r from-purple-300 to-amber-300 bg-clip-text text-transparent">dobb.ai</h1>
             </div>
             
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="icon" className="hover:bg-surface-subtle">
-                <Settings className="h-5 w-5 text-muted-foreground" />
+              <Button variant="ghost" size="icon" className="hover:bg-purple-500/20 text-purple-200 hover:text-white">
+                <Settings className="h-5 w-5" />
               </Button>
-              <Button variant="ghost" size="icon" className="hover:bg-surface-subtle">
-                <User className="h-5 w-5 text-muted-foreground" />
+              <Button variant="ghost" size="icon" className="hover:bg-purple-500/20 text-purple-200 hover:text-white">
+                <User className="h-5 w-5" />
               </Button>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-6 py-8">
+      <main className="relative z-10 container mx-auto px-6 py-8">
         <div className="max-w-7xl mx-auto">
           {/* Breadcrumbs */}
           <div className="mb-6">
@@ -262,43 +279,43 @@ const TestSummary = () => {
             
             {/* Key Metrics */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              <Card className="bg-surface-elevated border border-border">
+              <Card className="bg-gradient-to-br from-purple-900/30 to-slate-900/30 border-purple-500/30 backdrop-blur-sm">
                 <CardContent className="pt-4">
                   <div className="text-center">
-                    <div className="text-xl font-bold text-primary">{totalTests}</div>
-                    <div className="text-xs text-muted-foreground">Total Tests</div>
+                    <div className="text-xl font-bold text-purple-300">{totalTests}</div>
+                    <div className="text-xs text-purple-200">Total Tests</div>
                   </div>
                 </CardContent>
               </Card>
-              <Card className="bg-surface-elevated border border-border">
+              <Card className="bg-gradient-to-br from-purple-900/30 to-slate-900/30 border-purple-500/30 backdrop-blur-sm">
                 <CardContent className="pt-4">
                   <div className="text-center">
                     <div className="text-xl font-bold text-blue-400">{executedTests}</div>
-                    <div className="text-xs text-muted-foreground">Executed</div>
+                    <div className="text-xs text-purple-200">Executed</div>
                   </div>
                 </CardContent>
               </Card>
-              <Card className="bg-surface-elevated border border-border">
+              <Card className="bg-gradient-to-br from-purple-900/30 to-slate-900/30 border-purple-500/30 backdrop-blur-sm">
                 <CardContent className="pt-4">
                   <div className="text-center">
                     <div className="text-xl font-bold text-green-400">{passedTests}</div>
-                    <div className="text-xs text-muted-foreground">Passed</div>
+                    <div className="text-xs text-purple-200">Passed</div>
                   </div>
                 </CardContent>
               </Card>
-              <Card className="bg-surface-elevated border border-border">
+              <Card className="bg-gradient-to-br from-purple-900/30 to-slate-900/30 border-purple-500/30 backdrop-blur-sm">
                 <CardContent className="pt-4">
                   <div className="text-center">
                     <div className="text-xl font-bold text-red-400">{failedTests}</div>
-                    <div className="text-xs text-muted-foreground">Failed</div>
+                    <div className="text-xs text-purple-200">Failed</div>
                   </div>
                 </CardContent>
               </Card>
-              <Card className="bg-surface-elevated border border-border">
+              <Card className="bg-gradient-to-br from-purple-900/30 to-slate-900/30 border-purple-500/30 backdrop-blur-sm">
                 <CardContent className="pt-4">
                   <div className="text-center">
-                    <div className="text-xl font-bold text-primary">{passRate}%</div>
-                    <div className="text-xs text-muted-foreground">Pass Rate</div>
+                    <div className="text-xl font-bold text-amber-400">{passRate}%</div>
+                    <div className="text-xs text-purple-200">Pass Rate</div>
                   </div>
                 </CardContent>
               </Card>
@@ -308,13 +325,13 @@ const TestSummary = () => {
           {/* Charts Section */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             {/* Pie Chart */}
-            <Card className="bg-surface-elevated border border-border">
+            <Card className="bg-gradient-to-br from-purple-900/30 to-slate-900/30 border-purple-500/30 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                  <span>Test Status Distribution</span>
+                  <TrendingUp className="h-5 w-5 text-purple-300" />
+                  <span className="text-white">Test Status Distribution</span>
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-purple-200">
                   Visual breakdown of test execution results
                 </CardDescription>
               </CardHeader>

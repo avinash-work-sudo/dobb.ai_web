@@ -1,14 +1,4 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { Progress } from '@/components/ui/progress';
-import { Separator } from '@/components/ui/separator';
-import { useToast } from '@/hooks/use-toast';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -17,25 +7,37 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
-import { 
-  Play, 
-  Square, 
-  Loader2, 
-  CheckCircle, 
-  XCircle, 
-  Clock,
-  ExternalLink,
-  Download,
-  RefreshCw,
-  Eye,
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import {
   ArrowLeft,
-  TestTube,
-  Settings,
-  User,
   BarChart3,
+  CheckCircle,
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  Download,
+  ExternalLink,
+  Eye,
+  FileText,
   Home,
-  FileText
+  Loader2,
+  Play,
+  RefreshCw,
+  Settings,
+  Square,
+  TestTube,
+  User,
+  XCircle
 } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 
 interface ExecutionStep {
   stepNumber: number;
@@ -51,11 +53,21 @@ interface AutomationResult {
   status: string;
   framework: string;
   steps?: ExecutionStep[];
-  artifacts?: any[];
+  artifacts?: Array<{
+    artifact_type: string;
+    path: string;
+    [key: string]: unknown;
+  }>;
   reportUrl?: string;
   error?: string;
   isComplete?: boolean;
-  execution?: any;
+  execution?: {
+    status: string;
+    duration_ms?: number;
+    started_at?: string;
+    error_message?: string;
+    [key: string]: unknown;
+  };
 }
 
 const TestCaseRunner = () => {
@@ -65,43 +77,217 @@ const TestCaseRunner = () => {
   
   // Automation states
   const [task, setTask] = useState('');
-  const [framework, setFramework] = useState<'playwright' | 'puppeteer'>('playwright');
+  const framework = 'playwright';
   const [headless, setHeadless] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
   const [result, setResult] = useState<AutomationResult | null>(null);
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState('');
   const [ws, setWs] = useState<WebSocket | null>(null);
-
-  // Mock test case data - in real app, this would be fetched based on testCaseId
-  const testCase = {
-    id: parseInt(testCaseId || '1'),
-    name: "Successful User Registration with Valid Email",
-    status: "not_executed",
-    description: "Verify that a user can successfully register with a valid email address and strong password",
-    steps: [
-      "Navigate to registration page",
-      "Enter valid email address (test@example.com)",
-      "Enter strong password (minimum 8 characters, uppercase, lowercase, number, symbol)",
-      "Confirm password matches",
-      "Click 'Register' button",
-      "Verify success message is displayed",
-      "Check that verification email is sent"
-    ],
-    expectedResult: "User account is created and verification email is sent",
-    priority: "High"
-  };
+  const [showReport, setShowReport] = useState(false);
+  const [reportUrl, setReportUrl] = useState<string | null>(null);
+  const [currentExecutionId, setCurrentExecutionId] = useState<string | null>(null);
+  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
+  const [hasShownCompletionToast, setHasShownCompletionToast] = useState(false);
+  const [testCase, setTestCase] = useState<{
+    id: string;
+    name: string;
+    status: string;
+    description: string;
+    steps: string[];
+    expectedResult: string;
+    priority: string;
+  } | null>(null);
+  const [isLoadingTestCase, setIsLoadingTestCase] = useState(true);
+  const [userStory, setUserStory] = useState<{
+    id: string;
+    title: string;
+    [key: string]: unknown;
+  } | null>(null);
+  const [executionTimeout, setExecutionTimeout] = useState<NodeJS.Timeout | null>(null);
+  
+  // Use ref for polling interval to avoid closure issues
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Convert test steps to automation task
-  const convertStepsToTask = (steps: string[]) => {
-    return steps.join('. ') + '. ' + testCase.expectedResult;
+  const convertStepsToTask = (steps: string[], expectedResult?: string) => {
+    const numberedSteps = steps.map((step, index) => `Step ${index + 1}: ${step}`);
+    return numberedSteps.join(`\n`) + (expectedResult ? `\n\nExpected Result: ${expectedResult}` : '');
   };
 
-  // Initialize with test case steps
+  // Update test case status in database
+  const updateTestCaseStatus = useCallback(async (status: string, errorMessage?: string) => {
+    if (!testCase?.id) return;
+
+    try {
+      const updateData: any = {
+        status: status,
+        updated_at: new Date().toISOString()
+      };
+
+      // If there's an error message, we could store it in a separate field if needed
+      if (errorMessage) {
+        // You might want to add an error_message column to your test_cases table
+        // updateData.error_message = errorMessage;
+      }
+
+      const { error } = await supabase
+        .from('test_cases')
+        .update(updateData)
+        .eq('id', testCase.id);
+
+      if (error) {
+        console.error('Error updating test case status:', error);
+        toast({
+          title: "Status Update Failed",
+          description: "Failed to update test case status in database",
+          variant: "destructive",
+        });
+      } else {
+        console.log(`Test case status updated to: ${status}`);
+        // Update local test case state
+        setTestCase(prev => prev ? { ...prev, status } : null);
+      }
+    } catch (error) {
+      console.error('Error updating test case status:', error);
+      toast({
+        title: "Status Update Failed",
+        description: "Failed to update test case status",
+        variant: "destructive",
+      });
+    }
+  }, [testCase, toast]);
+
+  // Fetch test case data from database
   useEffect(() => {
-    const automationTask = convertStepsToTask(testCase.steps);
-    setTask(automationTask);
-  }, [testCaseId]);
+    let isMounted = true;
+
+    const fetchTestCaseData = async () => {
+      if (!testCaseId || !storyId) return;
+
+      try {
+        // Fetch test case from database
+        const { data: testCaseData, error: testCaseError } = await supabase
+          .from('test_cases')
+          .select('*')
+          .eq('id', testCaseId)
+          .single();
+
+        if (testCaseError) {
+          console.error('Error fetching test case:', testCaseError);
+          toast({
+            title: "Error",
+            description: "Failed to load test case data",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Fetch user story data for additional context
+        const { data: storyData, error: storyError } = await supabase
+          .from('user_stories')
+          .select('*')
+          .eq('id', storyId)
+          .single();
+
+        if (storyError) {
+          console.error('Error fetching user story:', storyError);
+        }
+
+        if (!isMounted) return;
+
+        // Transform data for UI
+        const transformedTestCase = {
+          id: testCaseData.id,
+          name: testCaseData.name,
+          status: testCaseData.status || "not_executed",
+          description: testCaseData.description,
+          steps: testCaseData.steps || [],
+          expectedResult: testCaseData.expected_result || "",
+          priority: testCaseData.priority?.charAt(0).toUpperCase() + testCaseData.priority?.slice(1) || "Medium"
+        };
+
+        setTestCase(transformedTestCase);
+        setUserStory(storyData);
+
+        // Initialize automation task with test case steps
+        if (transformedTestCase.steps.length > 0) {
+          const automationTask = convertStepsToTask(transformedTestCase.steps, transformedTestCase.expectedResult);
+          setTask(automationTask);
+        }
+
+      } catch (error) {
+        console.error('Error fetching test case data:', error);
+        if (isMounted) {
+          toast({
+            title: "Error",
+            description: "Failed to load test case data",
+            variant: "destructive",
+          });
+        }
+      } finally {
+        if (isMounted) setIsLoadingTestCase(false);
+      }
+    };
+
+    fetchTestCaseData();
+    return () => { isMounted = false; };
+  }, [testCaseId, storyId, toast]);
+
+  const handleAutomationUpdate = useCallback((update: {
+    status: string;
+    step?: string;
+    [key: string]: unknown;
+  }) => {
+    console.log('WebSocket update received:', update);
+    
+    if (update.status === 'progress') {
+      setCurrentStep(update.step || 'Processing...');
+      setProgress(prev => Math.min(prev + 10, 90));
+    } else if (update.status === 'completed' || update.status === 'failed' || update.status === 'error') {
+      // Stop polling first
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+        setPollingInterval(null);
+      }
+      
+      // Clear execution timeout
+      if (executionTimeout) {
+        clearTimeout(executionTimeout);
+        setExecutionTimeout(null);
+      }
+      
+      // Immediately update UI state
+      setIsRunning(false);
+      setProgress(100);
+      setCurrentStep(update.status === 'completed' ? 'Completed successfully!' : 'Automation failed');
+      
+      // Show completion toast only once per execution
+      if (!hasShownCompletionToast) {
+        setHasShownCompletionToast(true);
+        toast({
+          title: update.status === 'completed' ? "Test Passed" : "Test Failed",
+          description: `Test case "${testCase?.name || 'Unknown'}" execution completed`,
+          variant: update.status === 'completed' ? "default" : "destructive"
+        });
+      }
+      
+      // Fetch final results using current execution ID
+      if (currentExecutionId) {
+        fetchExecutionStatus(currentExecutionId).then(() => {
+          // Auto-show report if test completed successfully
+          if (update.status === 'completed') {
+            setTimeout(() => {
+              const url = `http://localhost:3001/api/artifacts/${currentExecutionId}/report`;
+              setReportUrl(url);
+              setShowReport(true);
+            }, 500);
+          }
+        });
+      }
+    }
+  }, [currentExecutionId, executionTimeout, hasShownCompletionToast, testCase?.name, toast]);
 
   // WebSocket connection for real-time updates
   useEffect(() => {
@@ -129,31 +315,65 @@ const TestCaseRunner = () => {
     return () => {
       websocket.close();
     };
-  }, []);
-
-  const handleAutomationUpdate = (update: any) => {
-    if (update.status === 'progress') {
-      setCurrentStep(update.step || 'Processing...');
-      setProgress(prev => Math.min(prev + 10, 90));
-    } else if (update.status === 'completed' || update.status === 'failed' || update.status === 'error') {
-      setIsRunning(false);
-      setProgress(100);
-      setCurrentStep(update.status === 'completed' ? 'Completed successfully!' : 'Automation failed');
-      
-      // Fetch final results
-      if (result?.executionId) {
-        fetchExecutionStatus(result.executionId);
+  }, [handleAutomationUpdate]);
+  
+  // Cleanup effect for polling interval and execution timeout
+  useEffect(() => {
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
       }
-    }
-  };
+      if (executionTimeout) {
+        clearTimeout(executionTimeout);
+      }
+    };
+  }, [executionTimeout]);
 
   const runAutomation = async () => {
     if (!task.trim()) return;
+
+    // Clear any existing polling
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+    if (pollingInterval) {
+      clearInterval(pollingInterval);
+      setPollingInterval(null);
+    }
 
     setIsRunning(true);
     setResult(null);
     setProgress(5);
     setCurrentStep('Starting test case automation...');
+    setShowReport(false);
+    setReportUrl(null);
+    setCurrentExecutionId(null);
+    setHasShownCompletionToast(false); // Reset completion toast flag
+    
+    // Set a timeout to automatically stop execution after 10 minutes
+    const timeout = setTimeout(() => {
+      console.log('Execution timeout reached, stopping automation');
+      setIsRunning(false);
+      setCurrentStep('Execution timeout - test took too long');
+      setProgress(100);
+      
+      // Clear polling if still running
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+        setPollingInterval(null);
+      }
+      
+      toast({
+        title: "Execution Timeout",
+        description: "Test execution took longer than expected and was stopped",
+        variant: "destructive"
+      });
+    }, 10 * 60 * 1000); // 10 minutes
+    
+    setExecutionTimeout(timeout);
 
     try {
       const response = await fetch('http://localhost:3001/api/automation/run', {
@@ -161,7 +381,6 @@ const TestCaseRunner = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           task: task.trim(), 
-          framework,
           testCaseId: testCase.id,
           storyId,
           options: { 
@@ -176,6 +395,7 @@ const TestCaseRunner = () => {
       
       if (data.success) {
         setResult(data);
+        setCurrentExecutionId(data.executionId);
         setProgress(20);
         
         // Subscribe to WebSocket updates for this execution
@@ -191,12 +411,15 @@ const TestCaseRunner = () => {
 
         toast({
           title: "Test Case Started",
-          description: `Running "${testCase.name}" with ${framework}`,
+          description: `Running "${testCase.name}" with dobb.ai`,
         });
       } else {
         setIsRunning(false);
         setResult(data);
         setCurrentStep('Failed to start automation');
+        
+        // Update test case status to failed since automation couldn't start
+        await updateTestCaseStatus('failed', data.error || "Could not start test automation");
         
         toast({
           title: "Failed to Start",
@@ -208,13 +431,17 @@ const TestCaseRunner = () => {
     } catch (error) {
       console.error('Automation failed:', error);
       setIsRunning(false);
+      const errorMessage = error instanceof Error ? error.message : 'Network error';
       setResult({ 
         executionId: '',
         status: 'error',
         framework,
-        error: error instanceof Error ? error.message : 'Network error'
+        error: errorMessage
       });
       setCurrentStep('Network error occurred');
+      
+      // Update test case status to failed due to network error
+      await updateTestCaseStatus('failed', errorMessage);
       
       toast({
         title: "Network Error",
@@ -225,43 +452,105 @@ const TestCaseRunner = () => {
   };
 
   const pollExecutionStatus = async (executionId: string) => {
+    // Clear any existing polling interval
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+
     const poll = async () => {
       try {
-        const response = await fetch(`http://localhost:3001/api/automation/status/${executionId}`);
+        const response = await fetch(`${import.meta.env.VITE_AUTOMATION_API_URL || 'http://localhost:3001'}/api/automation/status/${executionId}`);
         const data = await response.json();
         
         if (data.success) {
           setResult(data);
           
-          if (data.isComplete) {
+          // Check for completion status more comprehensively
+          const isComplete = data.isComplete || 
+                           data.execution?.status === 'passed' || 
+                           data.execution?.status === 'failed' || 
+                           data.execution?.status === 'error' ||
+                           data.status === 'completed' ||
+                           data.status === 'failed' ||
+                           data.status === 'error';
+          
+          if (isComplete) {
+            // Clear polling interval immediately
+            if (pollingIntervalRef.current) {
+              clearInterval(pollingIntervalRef.current);
+              pollingIntervalRef.current = null;
+              setPollingInterval(null);
+            }
+            
+            // Clear execution timeout
+            if (executionTimeout) {
+              clearTimeout(executionTimeout);
+              setExecutionTimeout(null);
+            }
+            
+            // Update UI state immediately
             setIsRunning(false);
             setProgress(100);
-            setCurrentStep(data.execution.status === 'passed' ? 'Test completed successfully!' : 'Test failed');
+            setCurrentStep(data.execution?.status === 'passed' ? 'Test completed successfully!' : 'Test failed');
             
-            toast({
-              title: data.execution.status === 'passed' ? "Test Passed" : "Test Failed",
-              description: `Test case "${testCase.name}" execution completed`,
-              variant: data.execution.status === 'passed' ? "default" : "destructive"
-            });
+            // Update test case status in database
+            const newStatus = data.execution.status === 'passed' ? 'passed' : 'failed';
+            await updateTestCaseStatus(newStatus, data.execution.error_message);
+            
+            // Show completion toast only if WebSocket didn't already show it
+            if (!hasShownCompletionToast) {
+              setHasShownCompletionToast(true);
+              toast({
+                title: data.execution?.status === 'passed' ? "Test Passed" : "Test Failed",
+                description: `Test case "${testCase?.name || 'Unknown'}" execution completed`,
+                variant: data.execution?.status === 'passed' ? "default" : "destructive"
+              });
+            }
+            
+            // Auto-show report if completed successfully
+            if (data.execution?.status === 'passed') {
+              setTimeout(() => {
+                const url = `http://localhost:3001/api/artifacts/${executionId}/report`;
+                setReportUrl(url);
+                setShowReport(true);
+              }, 500);
+            }
             return;
           }
-        }
-        
-        // Continue polling if not complete
-        if (isRunning) {
-          setTimeout(poll, 2000);
+        } else {
+          console.warn('Polling response not successful:', data);
         }
       } catch (error) {
         console.error('Polling error:', error);
+        // Stop polling on error and reset state
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current);
+          pollingIntervalRef.current = null;
+          setPollingInterval(null);
+        }
+        setIsRunning(false);
+        setCurrentStep('Error occurred during polling');
+        toast({
+          title: "Polling Error",
+          description: "Failed to check test execution status",
+          variant: "destructive"
+        });
       }
     };
     
+    // Start polling with setInterval instead of setTimeout to avoid stale closures
+    const interval = setInterval(poll, 2000);
+    pollingIntervalRef.current = interval;
+    setPollingInterval(interval);
+    
+    // Initial poll
     poll();
   };
 
-  const fetchExecutionStatus = async (executionId: string) => {
+  const fetchExecutionStatus = async (executionId: string): Promise<void> => {
     try {
-      const response = await fetch(`http://localhost:3001/api/automation/status/${executionId}`);
+      const response = await fetch(`${import.meta.env.VITE_AUTOMATION_API_URL || 'http://localhost:3001'}/api/automation/status/${executionId}`);
       const data = await response.json();
       
       if (data.success) {
@@ -273,15 +562,34 @@ const TestCaseRunner = () => {
   };
 
   const stopAutomation = async () => {
-    if (!result?.executionId) return;
+    if (!currentExecutionId) return;
+
+    // Clear polling first
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+    if (pollingInterval) {
+      clearInterval(pollingInterval);
+      setPollingInterval(null);
+    }
+
+    // Clear execution timeout
+    if (executionTimeout) {
+      clearTimeout(executionTimeout);
+      setExecutionTimeout(null);
+    }
 
     try {
-      await fetch(`http://localhost:3001/api/automation/stop/${result.executionId}`, {
+      await fetch(`${import.meta.env.VITE_AUTOMATION_API_URL || 'http://localhost:3001'}/api/automation/stop/${currentExecutionId}`, {
         method: 'POST'
       });
       
       setIsRunning(false);
       setCurrentStep('Stopped by user');
+      
+      // Update test case status to indicate it was stopped (you might want to use 'not_executed' or create a 'stopped' status)
+      await updateTestCaseStatus('not_executed', 'Test execution was stopped by user');
       
       toast({
         title: "Test Stopped",
@@ -289,6 +597,24 @@ const TestCaseRunner = () => {
       });
     } catch (error) {
       console.error('Error stopping automation:', error);
+    }
+  };
+
+  const toggleReportView = () => {
+    if (!currentExecutionId) return;
+    
+    if (!showReport) {
+      const url = `http://localhost:3001/api/artifacts/${currentExecutionId}/report`;
+      setReportUrl(url);
+      setShowReport(true);
+      
+      toast({
+        title: "Loading Report",
+        description: "Test execution report is loading...",
+      });
+    } else {
+      setShowReport(false);
+      setReportUrl(null);
     }
   };
 
@@ -335,10 +661,113 @@ const TestCaseRunner = () => {
     }
   };
 
+  // Show loading state while fetching test case data
+  if (isLoadingTestCase) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="border-b border-border bg-surface-elevated">
+          <div className="container mx-auto px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => navigate(`/feature/${id}/stories/${storyId}`)}
+                  className="hover:bg-surface-subtle"
+                >
+                  <ArrowLeft className="h-5 w-5 text-muted-foreground" />
+                </Button>
+                <div className="bg-gradient-primary p-2 rounded-lg shadow-elegant">
+                  <TestTube className="h-6 w-6 text-white" />
+                </div>
+                <h1 className="text-xl font-bold text-foreground">Test Case Runner</h1>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main className="container mx-auto px-6 py-8">
+          <div className="max-w-4xl mx-auto">
+            <Card className="bg-surface-elevated border border-border">
+              <CardContent className="pt-6">
+                <div className="text-center py-12">
+                  <Loader2 className="h-16 w-16 text-primary mx-auto animate-spin mb-6" />
+                  <h3 className="text-xl font-semibold text-foreground mb-4">
+                    Loading Test Case
+                  </h3>
+                  <p className="text-muted-foreground">
+                    Fetching test case details...
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Show error state if test case not found
+  if (!testCase) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="border-b border-border bg-surface-elevated">
+          <div className="container mx-auto px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => navigate(`/feature/${id}/stories/${storyId}`)}
+                  className="hover:bg-surface-subtle"
+                >
+                  <ArrowLeft className="h-5 w-5 text-muted-foreground" />
+                </Button>
+                <div className="bg-gradient-primary p-2 rounded-lg shadow-elegant">
+                  <TestTube className="h-6 w-6 text-white" />
+                </div>
+                <h1 className="text-xl font-bold text-foreground">Test Case Runner</h1>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main className="container mx-auto px-6 py-8">
+          <div className="max-w-4xl mx-auto text-center">
+            <h1 className="text-2xl font-bold text-foreground mb-4">Test Case Not Found</h1>
+            <p className="text-muted-foreground mb-6">The requested test case could not be found.</p>
+            <Button onClick={() => navigate(`/feature/${id}/stories/${storyId}`)}>
+              Back to User Story
+            </Button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 text-white relative overflow-hidden">
+      {/* Background Effects */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Mystical grid pattern */}
+        <div 
+          className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage: `
+              linear-gradient(rgba(147, 51, 234, 0.3) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(147, 51, 234, 0.3) 1px, transparent 1px)
+            `,
+            backgroundSize: '60px 60px'
+          }}
+        />
+        
+        {/* Floating orbs */}
+        <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-gradient-to-br from-purple-600/30 to-amber-500/20 rounded-full blur-2xl animate-pulse" />
+        <div className="absolute bottom-1/3 right-1/4 w-24 h-24 bg-gradient-to-br from-amber-500/30 to-purple-600/20 rounded-full blur-xl animate-pulse" style={{animationDelay: '2s'}} />
+      </div>
+
       {/* Top Bar */}
-      <header className="border-b border-border bg-surface-elevated">
+      <header className="relative z-10 border-b border-purple-500/30 bg-gradient-to-r from-slate-900/90 to-purple-950/90 backdrop-blur-sm">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -346,29 +775,29 @@ const TestCaseRunner = () => {
                 variant="ghost" 
                 size="icon" 
                 onClick={() => navigate(`/feature/${id}/stories/${storyId}`)}
-                className="hover:bg-surface-subtle"
+                className="hover:bg-purple-500/20 text-purple-200 hover:text-white"
               >
-                <ArrowLeft className="h-5 w-5 text-muted-foreground" />
+                <ArrowLeft className="h-5 w-5" />
               </Button>
-              <div className="bg-gradient-primary p-2 rounded-lg shadow-elegant">
-                <TestTube className="h-6 w-6 text-white" />
+              <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-amber-500 rounded-lg flex items-center justify-center">
+                <img src="/head.png" alt="dobb.ai" className="w-5 h-5 rounded" />
               </div>
-              <h1 className="text-xl font-bold text-foreground">Test Case Runner</h1>
+              <h1 className="text-xl font-bold bg-gradient-to-r from-purple-300 to-amber-300 bg-clip-text text-transparent">Test Case Runner</h1>
             </div>
             
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="icon" className="hover:bg-surface-subtle">
-                <Settings className="h-5 w-5 text-muted-foreground" />
+              <Button variant="ghost" size="icon" className="hover:bg-purple-500/20 text-purple-200 hover:text-white">
+                <Settings className="h-5 w-5" />
               </Button>
-              <Button variant="ghost" size="icon" className="hover:bg-surface-subtle">
-                <User className="h-5 w-5 text-muted-foreground" />
+              <Button variant="ghost" size="icon" className="hover:bg-purple-500/20 text-purple-200 hover:text-white">
+                <User className="h-5 w-5" />
               </Button>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-6 py-8">
+      <main className="relative z-10 container mx-auto px-6 py-8">
         <div className="max-w-6xl mx-auto">
           {/* Breadcrumbs */}
           <div className="mb-6">
@@ -398,7 +827,7 @@ const TestCaseRunner = () => {
                     onClick={() => navigate(`/feature/${id}`)}
                     className="cursor-pointer"
                   >
-                    User Authentication System
+                    Feature Analysis
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
@@ -416,7 +845,7 @@ const TestCaseRunner = () => {
                     onClick={() => navigate(`/feature/${id}/stories/${storyId}`)}
                     className="cursor-pointer"
                   >
-                    User Registration
+                    {userStory?.title || "User Story"}
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
@@ -442,35 +871,35 @@ const TestCaseRunner = () => {
             </h1>
             
             {/* Test Case Description */}
-            <Card className="bg-surface-elevated border border-border mb-6">
+            <Card className="bg-gradient-to-br from-purple-900/30 to-slate-900/30 border-purple-500/30 backdrop-blur-sm mb-6">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
-                  <FileText className="h-5 w-5 text-primary" />
-                  <span>Test Case Details</span>
+                  <FileText className="h-5 w-5 text-purple-300" />
+                  <span className="text-white">Test Case Details</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-foreground leading-relaxed mb-4">
+                <p className="text-purple-100 leading-relaxed mb-4">
                   {testCase.description}
                 </p>
                 
                 <div className="mb-4">
-                  <h4 className="text-sm font-semibold text-foreground mb-2">Test Steps:</h4>
+                  <h4 className="text-sm font-semibold text-white mb-2">Test Steps:</h4>
                   <ol className="space-y-1">
                     {testCase.steps.map((step, index) => (
                       <li key={index} className="flex items-start space-x-2 text-sm">
-                        <span className="bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium flex-shrink-0 mt-0.5">
+                        <span className="bg-gradient-to-r from-purple-500 to-amber-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium flex-shrink-0 mt-0.5">
                           {index + 1}
                         </span>
-                        <span className="text-muted-foreground">{step}</span>
+                        <span className="text-purple-200">{step}</span>
                       </li>
                     ))}
                   </ol>
                 </div>
 
                 <div>
-                  <h4 className="text-sm font-semibold text-foreground mb-2">Expected Result:</h4>
-                  <p className="text-sm text-muted-foreground bg-surface-subtle p-3 rounded-lg">
+                  <h4 className="text-sm font-semibold text-white mb-2">Expected Result:</h4>
+                  <p className="text-sm text-purple-200 bg-purple-900/30 p-3 rounded-lg">
                     {testCase.expectedResult}
                   </p>
                 </div>
@@ -480,64 +909,43 @@ const TestCaseRunner = () => {
 
           {/* Automation Control Panel */}
           <div className="space-y-6">
-            <Card>
+            <Card className="bg-gradient-to-br from-purple-900/30 to-slate-900/30 border-purple-500/30 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
-                  <Play className="h-5 w-5 text-primary" />
-                  <span>AI-Powered Test Automation</span>
+                  <Play className="h-5 w-5 text-purple-300" />
+                  <span className="text-white">AI-Powered Test Automation</span>
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-purple-200">
                   This test case will be executed using natural language automation
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Configuration */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">
-                      Browser Framework:
-                    </label>
-                    <Select value={framework} onValueChange={(value) => setFramework(value as 'playwright' | 'puppeteer')} disabled={isRunning}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Choose framework" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="playwright">
-                          🎭 Playwright (Multi-browser)
-                        </SelectItem>
-                        <SelectItem value="puppeteer">
-                          🐶 Puppeteer (Chrome focus)
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="headless"
-                      checked={headless}
-                      onCheckedChange={setHeadless}
-                      disabled={isRunning}
-                    />
-                    <label htmlFor="headless" className="text-sm font-medium">
-                      Run in headless mode
-                    </label>
-                  </div>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="headless"
+                    checked={headless}
+                    onCheckedChange={setHeadless}
+                    disabled={isRunning}
+                  />
+                  <label htmlFor="headless" className="text-sm font-medium text-white">
+                    Run in headless mode
+                  </label>
                 </div>
 
                 {/* Task Input */}
                 <div>
-                  <label className="text-sm font-medium mb-2 block">
+                  <label className="text-sm font-medium mb-2 block text-white">
                     Automation Task (Auto-generated from test steps):
                   </label>
                   <Textarea
                     value={task}
                     onChange={(e) => setTask(e.target.value)}
                     rows={4}
-                    className="resize-none"
+                    className="resize-none bg-purple-900/30 border-purple-500/30 text-white placeholder:text-purple-300"
                     disabled={isRunning}
                   />
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-xs text-purple-300 mt-1">
                     This task was automatically generated from the test case steps. You can modify it if needed.
                   </p>
                 </div>
@@ -547,7 +955,7 @@ const TestCaseRunner = () => {
                   <Button 
                     onClick={runAutomation} 
                     disabled={isRunning || !task.trim()}
-                    className="flex-1"
+                    className="flex-1 bg-gradient-to-r from-purple-600 to-amber-600 hover:from-purple-700 hover:to-amber-700 text-white"
                   >
                     {isRunning ? (
                       <>
@@ -557,7 +965,7 @@ const TestCaseRunner = () => {
                     ) : (
                       <>
                         <Play className="mr-2 h-4 w-4" />
-                        Run Test with {framework === 'playwright' ? 'Playwright' : 'Puppeteer'}
+                        Run Test with dobb.ai
                       </>
                     )}
                   </Button>
@@ -577,8 +985,8 @@ const TestCaseRunner = () => {
                 {isRunning && (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
-                      <span>{currentStep}</span>
-                      <span>{progress}%</span>
+                      <span className="text-white">{currentStep}</span>
+                      <span className="text-white">{progress}%</span>
                     </div>
                     <Progress value={progress} className="w-full" />
                   </div>
@@ -588,16 +996,16 @@ const TestCaseRunner = () => {
 
             {/* Results */}
             {result && (
-              <Card>
+              <Card className="bg-gradient-to-br from-purple-900/30 to-slate-900/30 border-purple-500/30 backdrop-blur-sm">
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
                     <span className="flex items-center space-x-2">
                       {getStatusIcon(result.execution?.status || result.status)}
-                      <span>Test Execution Results</span>
+                      <span className="text-white">Test Execution Results</span>
                     </span>
                     <div className="flex items-center space-x-2">
                       <Badge variant="outline" className="text-xs">
-                        {result.framework}
+                        dobb.ai
                       </Badge>
                       <Badge className={`text-xs border ${getStatusColor(result.execution?.status || result.status)}`}>
                         {result.execution?.status || result.status}
@@ -611,24 +1019,24 @@ const TestCaseRunner = () => {
                     {result.execution && (
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                         <div>
-                          <span className="text-muted-foreground">Duration:</span>
-                          <div className="font-medium">
+                          <span className="text-purple-300">Duration:</span>
+                          <div className="font-medium text-white">
                             {result.execution.duration_ms ? `${Math.round(result.execution.duration_ms / 1000)}s` : 'N/A'}
                           </div>
                         </div>
                         <div>
-                          <span className="text-muted-foreground">Steps:</span>
-                          <div className="font-medium">{result.steps?.length || 0}</div>
+                          <span className="text-purple-300">Steps:</span>
+                          <div className="font-medium text-white">{result.steps?.length || 0}</div>
                         </div>
                         <div>
-                          <span className="text-muted-foreground">Started:</span>
-                          <div className="font-medium">
+                          <span className="text-purple-300">Started:</span>
+                          <div className="font-medium text-white">
                             {result.execution.started_at ? new Date(result.execution.started_at).toLocaleTimeString() : 'N/A'}
                           </div>
                         </div>
                         <div>
-                          <span className="text-muted-foreground">Artifacts:</span>
-                          <div className="font-medium">{result.artifacts?.length || 0}</div>
+                          <span className="text-purple-300">Artifacts:</span>
+                          <div className="font-medium text-white">{result.artifacts?.length || 0}</div>
                         </div>
                       </div>
                     )}
@@ -637,11 +1045,11 @@ const TestCaseRunner = () => {
 
                     {/* Action Buttons */}
                     <div className="flex flex-wrap gap-2">
-                      {result.executionId && (
+                      {currentExecutionId && (
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => fetchExecutionStatus(result.executionId)}
+                          onClick={() => fetchExecutionStatus(currentExecutionId)}
                         >
                           <RefreshCw className="mr-2 h-4 w-4" />
                           Refresh
@@ -652,10 +1060,37 @@ const TestCaseRunner = () => {
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => window.open(`http://localhost:3001/api/artifacts/${result.executionId}/report`, '_blank')}
+                          onClick={toggleReportView}
                         >
                           <Eye className="mr-2 h-4 w-4" />
-                          View Report
+                          {showReport ? 'Hide Report' : 'View Report'}
+                          {showReport ? (
+                            <ChevronUp className="ml-1 h-3 w-3" />
+                          ) : (
+                            <ChevronDown className="ml-1 h-3 w-3" />
+                          )}
+                        </Button>
+                      )}
+
+                      {result.artifacts?.find(a => a.artifact_type === 'html_report') && (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => window.open(`http://localhost:3001/api/artifacts/${currentExecutionId}/report/normal`, '_blank')}
+                        >
+                          <ExternalLink className="mr-2 h-4 w-4" />
+                          Open in New Tab
+                        </Button>
+                      )}
+
+                      {currentExecutionId && (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => window.open(`http://localhost:3001/api/artifacts/${currentExecutionId}/report/playwright`, '_blank')}
+                        >
+                          <ExternalLink className="mr-2 h-4 w-4" />
+                          dobb.ai Trace
                         </Button>
                       )}
 
@@ -663,7 +1098,7 @@ const TestCaseRunner = () => {
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => window.open(`http://localhost:3001/api/artifacts/${result.executionId}/screenshots`, '_blank')}
+                          onClick={() => window.open(`http://localhost:3001/api/artifacts/${currentExecutionId}/screenshots`, '_blank')}
                         >
                           <Download className="mr-2 h-4 w-4" />
                           Screenshots
@@ -674,11 +1109,52 @@ const TestCaseRunner = () => {
                         variant="outline" 
                         size="sm"
                         onClick={() => navigate(`/feature/${id}/stories/${storyId}/test-summary`)}
+                        className="border-purple-500/50 text-purple-300 hover:bg-purple-500/20"
                       >
                         <BarChart3 className="mr-2 h-4 w-4" />
                         View All Results
                       </Button>
                     </div>
+
+                    {/* Inline Report Display */}
+                    {showReport && reportUrl && (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-medium text-white">Test Execution Report</h4>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => setShowReport(false)}
+                          >
+                            <XCircle className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <div className="border border-purple-500/30 rounded-lg overflow-hidden">
+                          <iframe
+                            src={`http://localhost:3001/api/artifacts/${currentExecutionId}/report/playwright`}
+                            className="w-full h-96 border-0"
+                            title="Test Execution Report"
+                            sandbox="allow-scripts allow-same-origin"
+                            onLoad={() => {
+                              toast({
+                                title: "Report Loaded",
+                                description: "Test execution report has been loaded successfully",
+                              });
+                            }}
+                            onError={() => {
+                              toast({
+                                title: "Report Error",
+                                description: "Failed to load the test execution report",
+                                variant: "destructive"
+                              });
+                            }}
+                          />
+                        </div>
+                        <p className="text-xs text-purple-300">
+                          📊 This report contains detailed execution steps, screenshots, and debugging information.
+                        </p>
+                      </div>
+                    )}
 
                     {/* Error Message */}
                     {(result.error || result.execution?.error_message) && (
@@ -692,18 +1168,18 @@ const TestCaseRunner = () => {
                     {/* Steps Summary */}
                     {result.steps && result.steps.length > 0 && (
                       <div>
-                        <h4 className="font-medium mb-2">Execution Steps:</h4>
+                        <h4 className="font-medium mb-2 text-white">Execution Steps:</h4>
                         <div className="space-y-2 max-h-48 overflow-y-auto">
                           {result.steps.map((step, index) => (
-                            <div key={index} className="flex items-start space-x-3 p-2 rounded border text-sm">
+                            <div key={index} className="flex items-start space-x-3 p-2 rounded border border-purple-500/30 text-sm">
                               {step.success ? (
                                 <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
                               ) : (
                                 <XCircle className="h-4 w-4 text-red-500 mt-0.5" />
                               )}
                               <div className="flex-1">
-                                <div className="font-medium">{step.instruction}</div>
-                                <div className="text-muted-foreground text-xs">
+                                <div className="font-medium text-white">{step.instruction}</div>
+                                <div className="text-purple-300 text-xs">
                                   Step {step.stepNumber} • {step.durationMs}ms
                                   {step.errorMessage && ` • Error: ${step.errorMessage}`}
                                 </div>
@@ -725,3 +1201,4 @@ const TestCaseRunner = () => {
 };
 
 export default TestCaseRunner;
+

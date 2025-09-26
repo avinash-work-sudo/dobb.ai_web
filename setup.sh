@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🚀 Setting up Weave & Know AI Test Automation..."
+echo "🚀 Setting up dobb.ai AI Test Automation..."
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -110,7 +110,7 @@ echo "📝 Creating startup scripts..."
 cat > start.sh << 'EOL'
 #!/bin/bash
 
-echo "🚀 Starting Weave & Know AI Test Automation..."
+echo "🚀 Starting dobb.ai AI Test Automation..."
 
 # Colors
 GREEN='\033[0;32m'
@@ -223,4 +223,5 @@ echo "  Frontend: http://localhost:5173"
 echo "  Backend:  See backend/README.md"
 echo ""
 print_status "Happy automating! 🤖"
+
 

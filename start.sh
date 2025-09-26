@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🚀 Starting Weave & Know AI Test Automation..."
+echo "🚀 Starting dobb.ai AI Test Automation..."
 
 # Colors
 GREEN='\033[0;32m'
@@ -63,4 +63,5 @@ print_info "Press Ctrl+C to stop both servers"
 # Wait for user to stop
 trap 'echo ""; echo "🛑 Stopping servers..."; kill $BACKEND_PID $FRONTEND_PID 2>/dev/null; exit 0' INT
 wait
+
 

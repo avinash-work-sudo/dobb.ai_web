@@ -1,0 +1,13 @@
+{
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "ms-vscode.vscode-typescript-next",
+    "bradlc.vscode-tailwindcss",
+    "ms-playwright.playwright",
+    "yzhang.markdown-all-in-one"
+  ],
+  "unwantedRecommendations": []
+}
+
+
