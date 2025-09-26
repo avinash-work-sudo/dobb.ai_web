@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import {
   ArrowLeft,
-  Clock,
   Figma,
   FileText,
   Filter,
@@ -27,7 +26,7 @@ const Features = () => {
   useEffect(() => {
     const fetchFeatures = async () => {
       try {
-        // Fetch features with their impact analysis
+        // Fetch features with their impact analysis, ordered by latest first
         const { data: featuresData, error: featuresError } = await supabase
           .from('features')
           .select(`
@@ -46,7 +45,8 @@ const Features = () => {
               created_at,
               updated_at
             )
-          `);
+          `)
+          .order('created_at', { ascending: false });
 
         if (featuresError) {
           console.error('Error fetching features:', featuresError);
@@ -65,35 +65,22 @@ const Features = () => {
 
           // Extract information from the actual impact_json structure
           // Handle both summary as string and impactScore as object
-          let summary, impactScore, estimatedEffort, riskLevel;
+          let summary, riskLevel;
           
           if (typeof impactData.summary === 'string') {
             // When summary is a string, impactScore is an object
             summary = impactData.summary;
             const impactScoreObj = impactData.impactScore || {};
-            impactScore = impactScoreObj.totalImpactScore || 0;
-            estimatedEffort = impactScoreObj.estimatedEffort || "0 weeks";
             riskLevel = impactScoreObj.riskLevel || "Medium";
           } else {
             // When summary is an object (old format)
             const summaryObj = impactData.summary || impactData.impactScore || {};
             summary = "Impact analysis completed";
-            impactScore = summaryObj.totalImpactScore || 0;
-            estimatedEffort = summaryObj.estimatedEffort || "0 weeks";
             riskLevel = summaryObj.riskLevel || "Medium";
           }
           
-          // Convert estimated effort to hours (rough estimation: 1 week = 40 hours)
-          const estimatedHours = estimatedEffort.includes("week") 
-            ? parseInt(estimatedEffort) * 40 
-            : 0;
-
           // Derive priority from risk level
           const priority = riskLevel === "High" ? "high" : riskLevel === "Low" ? "low" : "medium";
-
-          // Calculate team size based on impacted modules (rough estimation)
-          const impactedModules = impactData.impactedModules || [];
-          const teamSize = Math.max(1, Math.min(5, impactedModules.length));
 
           return {
             id: feature.id,
@@ -102,10 +89,7 @@ const Features = () => {
             status: feature.status || "pending",
             priority: priority.toLowerCase(),
             lastAnalyzed: new Date(feature.updated_at).toISOString().split('T')[0],
-            impactScore: Math.round(impactScore * 10), // Convert to 0-100 scale
             sourceType,
-            teamSize,
-            estimatedHours,
           };
         }) || [];
 
@@ -288,30 +272,6 @@ const Features = () => {
                 </CardDescription>
                 
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Impact Score</span>
-                    <div className="flex items-center space-x-2">
-                      <div className="w-16 bg-surface-subtle rounded-full h-2">
-                        <div 
-                          className="bg-gradient-primary h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${feature.impactScore}%` }}
-                        />
-                      </div>
-                      <span className="text-foreground font-medium">{feature.impactScore}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="flex items-center space-x-2">
-                      <Users className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">{feature.teamSize} devs</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">{feature.estimatedHours}h</span>
-                    </div>
-                  </div>
-                  
                   <div className="text-xs text-muted-foreground pt-2 border-t border-border">
                     Last analyzed: {new Date(feature.lastAnalyzed).toLocaleDateString()}
                   </div>
