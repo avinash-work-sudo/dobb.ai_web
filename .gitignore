@@ -22,3 +22,23 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Midscene.js dump files
+midscene_run/dump
+midscene_run/report
+midscene_run/tmp
+midscene_run/log
+
+# Generated test artifacts
+backend/artifacts/reports/*.html
+backend/artifacts/screenshots/*.png
+backend/artifacts/screenshots/*.jpg
+backend/database/*.db
+
+# Any HTML reports generated anywhere
+**/report_*.html
+**/playwright-report_*.html
+**/playwright-*.html
+
+.env
+./backend/.env

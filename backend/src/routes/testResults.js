@@ -8,7 +8,6 @@ router.get('/', async (req, res) => {
   try {
     const {
       status,
-      framework,
       userId,
       startDate,
       endDate,
@@ -17,7 +16,6 @@ router.get('/', async (req, res) => {
 
     const filters = {};
     if (status) filters.status = status;
-    if (framework) filters.framework = framework;
     if (userId) filters.userId = userId;
     if (startDate) filters.startDate = startDate;
     if (endDate) filters.endDate = endDate;
@@ -44,7 +42,7 @@ router.get('/', async (req, res) => {
 router.get('/:executionId', async (req, res) => {
   try {
     const { executionId } = req.params;
-    
+
     const execution = await TestResultStorage.getExecution(executionId);
     if (!execution) {
       return res.status(404).json({
@@ -79,9 +77,9 @@ router.get('/:executionId', async (req, res) => {
 router.get('/:executionId/steps', async (req, res) => {
   try {
     const { executionId } = req.params;
-    
+
     const steps = await TestResultStorage.getExecutionSteps(executionId);
-    
+
     res.json({
       success: true,
       steps,
@@ -101,9 +99,9 @@ router.get('/:executionId/steps', async (req, res) => {
 router.get('/:executionId/artifacts', async (req, res) => {
   try {
     const { executionId } = req.params;
-    
+
     const artifacts = await TestResultStorage.getExecutionArtifacts(executionId);
-    
+
     res.json({
       success: true,
       artifacts,
@@ -124,14 +122,12 @@ router.get('/statistics', async (req, res) => {
   try {
     const {
       startDate,
-      endDate,
-      framework
+      endDate
     } = req.query;
 
     const filters = {};
     if (startDate) filters.startDate = startDate;
     if (endDate) filters.endDate = endDate;
-    if (framework) filters.framework = framework;
 
     const statistics = await TestResultStorage.getTestStatistics(filters);
 
@@ -153,7 +149,7 @@ router.get('/statistics', async (req, res) => {
 router.delete('/:executionId', async (req, res) => {
   try {
     const { executionId } = req.params;
-    
+
     const execution = await TestResultStorage.getExecution(executionId);
     if (!execution) {
       return res.status(404).json({
@@ -180,4 +176,5 @@ router.delete('/:executionId', async (req, res) => {
 });
 
 export default router;
+
 

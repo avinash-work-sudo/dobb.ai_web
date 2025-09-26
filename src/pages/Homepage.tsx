@@ -1,27 +1,23 @@
-import { useState } from "react";
 import { impactAnalysisAPI } from "@/api/impact-analysis";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useNavigate } from "react-router-dom";
 import { UploadCard } from "@/components/UploadCard";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  Settings, 
-  User, 
-  Upload, 
-  Link, 
-  FileText, 
-  Figma, 
-  Mic, 
-  BarChart3,
+import { supabase } from "@/integrations/supabase/client";
+import {
   Eye,
-  Plus
+  Figma,
+  FileText,
+  Link,
+  Mic,
+  Plus,
+  Settings,
+  Upload,
+  User
 } from "lucide-react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Homepage = () => {
   const navigate = useNavigate();
@@ -121,8 +117,8 @@ const Homepage = () => {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="bg-gradient-primary p-2 rounded-lg shadow-elegant">
-                <BarChart3 className="h-6 w-6 text-white" />
+              <div className="p-2 rounded-lg shadow-elegant">
+                <img src="/head.png" alt="DOBB.ai" className="size-10" />
               </div>
               <h1 className="text-xl font-bold text-foreground">DOBB.ai</h1>
             </div>

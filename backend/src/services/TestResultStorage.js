@@ -15,7 +15,7 @@ export class TestResultStorage {
       id,
       executionData.testName,
       executionData.taskDescription,
-      executionData.framework,
+      executionData.framework || 'playwright',
       executionData.status,
       executionData.startedAt?.toISOString(),
       executionData.userId,
@@ -27,7 +27,7 @@ export class TestResultStorage {
 
   static async updateExecution(executionId, updates) {
     const db = getDatabase();
-    
+
     const setClause = [];
     const values = [];
 
@@ -61,7 +61,7 @@ export class TestResultStorage {
 
   static async getExecution(executionId) {
     const db = getDatabase();
-    
+
     return await db.getAsync(`
       SELECT * FROM test_executions WHERE id = ?
     `, [executionId]);
@@ -69,7 +69,7 @@ export class TestResultStorage {
 
   static async getExecutions(filters = {}) {
     const db = getDatabase();
-    
+
     let query = 'SELECT * FROM test_executions WHERE 1=1';
     const values = [];
 
@@ -132,7 +132,7 @@ export class TestResultStorage {
 
   static async getExecutionSteps(executionId) {
     const db = getDatabase();
-    
+
     const steps = await db.allAsync(`
       SELECT * FROM test_steps 
       WHERE execution_id = ? 
@@ -169,7 +169,7 @@ export class TestResultStorage {
 
   static async getExecutionArtifacts(executionId) {
     const db = getDatabase();
-    
+
     return await db.allAsync(`
       SELECT * FROM test_artifacts 
       WHERE execution_id = ? 
@@ -198,7 +198,7 @@ export class TestResultStorage {
 
   static async getExecutionRequirements(executionId) {
     const db = getDatabase();
-    
+
     return await db.allAsync(`
       SELECT * FROM test_requirements 
       WHERE execution_id = ? 
@@ -208,7 +208,7 @@ export class TestResultStorage {
 
   static async getTestStatistics(filters = {}) {
     const db = getDatabase();
-    
+
     let whereClause = 'WHERE 1=1';
     const values = [];
 
@@ -257,9 +257,10 @@ export class TestResultStorage {
 
   static async deleteExecution(executionId) {
     const db = getDatabase();
-    
+
     // Foreign key constraints will handle cascading deletes
     await db.runAsync('DELETE FROM test_executions WHERE id = ?', [executionId]);
   }
 }
+
 

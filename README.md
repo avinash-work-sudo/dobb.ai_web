@@ -1,4 +1,4 @@
-# Welcome to your Lovable project
+# dobb.ai - AI Test Automation Platform
 
 ## Project info
 

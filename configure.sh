@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Configuration script for Weave & Know AI Test Automation
-echo "🔧 Configuring Weave & Know AI Test Automation Environment..."
+# Configuration script for dobb.ai AI Test Automation
+echo "🔧 Configuring dobb.ai AI Test Automation Environment..."
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -96,7 +96,7 @@ print_info "Creating $ENV_FILE..."
 
 cat > "$ENV_FILE" << EOL
 # ===========================================
-# Weave & Know AI Test Automation Configuration
+# dobb.ai AI Test Automation Configuration
 # Generated on $(date)
 # ===========================================
 
@@ -212,4 +212,5 @@ fi
 
 echo ""
 print_info "For detailed configuration options, see: ENVIRONMENT_SETUP.md"
+
 

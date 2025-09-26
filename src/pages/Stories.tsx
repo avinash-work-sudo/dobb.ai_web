@@ -1,40 +1,36 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import {
   Breadcrumb,
-  BreadcrumbEllipsis,
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
-  BreadcrumbSeparator,
+  BreadcrumbSeparator
 } from "@/components/ui/breadcrumb";
-import { 
-  ArrowLeft, 
-  BarChart3, 
-  Settings, 
-  User, 
-  Eye,
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  ArrowLeft,
+  Download,
   Edit,
+  Eye,
+  Home,
+  Loader2,
+  Settings,
   TestTube,
   Upload,
-  ExternalLink,
-  Download,
-  CheckCircle2,
-  Home,
-  Loader2
+  User
 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 
 const Stories = () => {
   console.log('Stories component loaded'); // Force rebuild
@@ -386,8 +382,8 @@ const Stories = () => {
                 >
                   <ArrowLeft className="h-5 w-5 text-muted-foreground" />
                 </Button>
-                <div className="bg-gradient-primary p-2 rounded-lg shadow-elegant">
-                  <BarChart3 className="h-6 w-6 text-white" />
+                <div className="p-2 rounded-lg shadow-elegant">
+                  <img src="/head.png" alt="DOBB.ai" className="size-10" />
                 </div>
                 <h1 className="text-xl font-bold text-foreground">DOBB.ai</h1>
               </div>
@@ -431,8 +427,8 @@ const Stories = () => {
               >
                 <ArrowLeft className="h-5 w-5 text-muted-foreground" />
               </Button>
-              <div className="bg-gradient-primary p-2 rounded-lg shadow-elegant">
-                <BarChart3 className="h-6 w-6 text-white" />
+              <div className="p-2 rounded-lg shadow-elegant">
+                <img src="/head.png" alt="DOBB.ai" className="size-10" />
               </div>
               <h1 className="text-xl font-bold text-foreground">DOBB.ai</h1>
             </div>
@@ -624,7 +620,7 @@ const Stories = () => {
                           <Button 
                             variant="ghost" 
                             size="sm"
-                            onClick={() => navigate(`/feature/${id}/stories/${story.id}`)}
+                            onClick={() => navigate(`/feature/${id}/stories/${story.dbId}`)}
                             className="hover:bg-surface-subtle"
                           >
                             <Eye className="h-4 w-4" />
@@ -640,7 +636,7 @@ const Stories = () => {
                           <Button 
                             variant="ghost" 
                             size="sm"
-                            onClick={() => navigate(`/feature/${id}/stories/${story.id}/tests`)}
+                            onClick={() => navigate(`/feature/${id}/stories/${story.dbId}/tests`)}
                             className="hover:bg-surface-subtle"
                           >
                             <TestTube className="h-4 w-4" />

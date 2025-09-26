@@ -1,16 +1,18 @@
-import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
+
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+
 
 interface TestCase {
   id: number;
@@ -43,7 +45,8 @@ import {
   Eye,
   Edit,
   FileText,
-  Home
+  Home,
+  RefreshCw
 } from "lucide-react";
 
 const StoryDetail = () => {
@@ -56,118 +59,176 @@ const StoryDetail = () => {
   const [selectedTestCase, setSelectedTestCase] = useState<TestCase | null>(null);
   const [editingTestCase, setEditingTestCase] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [story, setStory] = useState<any>(null);
+  const [testCases, setTestCases] = useState<TestCase[]>([]);
+  const [featureTitle, setFeatureTitle] = useState("Feature Analysis");
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Mock story data
-  const story = {
-    id: 1,
-    title: "User Registration with Email Verification",
-    description: "As a new user, I want to register with my email address and verify it through a confirmation link so that I can access the platform securely.",
-    acceptanceCriteria: [
-      "User can enter valid email and password",
-      "System sends verification email within 30 seconds",
-      "User can click verification link to activate account",
-      "System prevents login until email is verified",
-      "User receives confirmation message upon successful verification"
-    ],
-    priority: "High",
-    estimatedHours: 16,
+  // Function to fetch story and test cases data from database
+  const fetchStoryData = useCallback(async (showRefreshIndicator = false) => {
+    if (!storyId) return;
+
+    if (showRefreshIndicator) {
+      setIsRefreshing(true);
+    }
+
+    try {
+      // Fetch user story from database
+      const { data: storyData, error: storyError } = await supabase
+        .from('user_stories')
+        .select('*')
+        .eq('id', storyId)
+        .single();
+
+      if (storyError) {
+        console.error('Error fetching user story:', storyError);
+        toast({
+          title: "Error",
+          description: "Failed to load user story data",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Fetch test cases for this story
+      const { data: testCasesData, error: testCasesError } = await supabase
+        .from('test_cases')
+        .select('*')
+        .eq('user_story_id', storyId)
+        .order('created_at', { ascending: true });
+
+      if (testCasesError) {
+        console.error('Error fetching test cases:', testCasesError);
+        toast({
+          title: "Error",
+          description: "Failed to load test cases",
+          variant: "destructive",
+        });
+      }
+
+      // Fetch feature info for breadcrumb
+      if (id) {
+        const { data: featureData, error: featureError } = await supabase
+          .from('features')
+          .select(`
+            id,
+            impact_analysis (
+              impact_json
+            )
+          `)
+          .eq('id', id)
+          .single();
+
+        if (!featureError && featureData?.impact_analysis?.[0]) {
+          const analysisData = featureData.impact_analysis[0].impact_json as any;
+          setFeatureTitle(analysisData?.title || `Feature ${id.slice(0, 8)}`);
+        }
+      }
+
+      // Transform story data for UI
+      const transformedStory = {
+        id: storyData.id,
+        title: storyData.title,
+        description: storyData.description,
+        acceptanceCriteria: storyData.acceptance_criteria || [],
+        priority: storyData.priority?.charAt(0).toUpperCase() + storyData.priority?.slice(1) || "Medium",
+        estimatedHours: storyData.estimated_hours || 0,
+      };
+
+      // Transform test cases data for UI
+      const transformedTestCases = (testCasesData || []).map((testCase: any) => ({
+        id: testCase.id,
+        name: testCase.name,
+        status: testCase.status || "not_executed",
+        description: testCase.description || "",
+        steps: testCase.steps || [],
+        expectedResult: testCase.expected_result || "",
+        priority: testCase.priority?.charAt(0).toUpperCase() + testCase.priority?.slice(1) || "Medium"
+      }));
+
+      setStory(transformedStory);
+      setTestCases(transformedTestCases);
+
+    } catch (error) {
+      console.error('Error fetching story data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load story data",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+      if (showRefreshIndicator) {
+        setIsRefreshing(false);
+      }
+    }
+  }, [storyId, id, toast]);
+
+  // Manual refresh function
+  const handleRefresh = async () => {
+    await fetchStoryData(true);
+    toast({
+      title: "Refreshed",
+      description: "Test case data has been refreshed",
+    });
   };
 
-  // Mock test cases data
-  const testCases = [
-    {
-      id: 1,
-      name: "Successful User Registration with Valid Email",
-      status: "passed",
-      description: "Verify that a user can successfully register with a valid email address and strong password",
-      steps: [
-        "Navigate to registration page",
-        "Enter valid email address (test@example.com)",
-        "Enter strong password (minimum 8 characters, uppercase, lowercase, number, symbol)",
-        "Confirm password matches",
-        "Click 'Register' button",
-        "Verify success message is displayed",
-        "Check that verification email is sent"
-      ],
-      expectedResult: "User account is created and verification email is sent",
-      priority: "High"
-    },
-    {
-      id: 2,
-      name: "Registration Fails with Invalid Email Format",
-      status: "failed",
-      description: "Verify that registration fails when user enters invalid email format",
-      steps: [
-        "Navigate to registration page",
-        "Enter invalid email format (test@invalid)",
-        "Enter valid password",
-        "Click 'Register' button",
-        "Verify error message is displayed"
-      ],
-      expectedResult: "Registration fails with appropriate error message",
-      priority: "High"
-    },
-    {
-      id: 3,
-      name: "Email Verification Link Functionality",
-      status: "not_executed",
-      description: "Verify that clicking the verification link activates the user account",
-      steps: [
-        "Complete successful registration",
-        "Check email inbox for verification message",
-        "Click verification link in email",
-        "Verify redirect to success page",
-        "Attempt to login with registered credentials",
-        "Verify successful login"
-      ],
-      expectedResult: "Account is activated and user can login successfully",
-      priority: "High"
-    },
-    {
-      id: 4,
-      name: "Weak Password Validation",
-      status: "passed",
-      description: "Verify that system rejects weak passwords during registration",
-      steps: [
-        "Navigate to registration page",
-        "Enter valid email address",
-        "Enter weak password (e.g., '123')",
-        "Attempt to register",
-        "Verify password strength error message"
-      ],
-      expectedResult: "Registration fails with password strength requirements message",
-      priority: "Medium"
-    },
-    {
-      id: 5,
-      name: "Duplicate Email Registration Prevention",
-      status: "not_executed",
-      description: "Verify that system prevents registration with already registered email",
-      steps: [
-        "Register with email address",
-        "Attempt to register again with same email",
-        "Verify error message about existing account",
-        "Check that no duplicate account is created"
-      ],
-      expectedResult: "System prevents duplicate registration and shows appropriate message",
-      priority: "Medium"
-    },
-    {
-      id: 6,
-      name: "Registration Form Field Validation",
-      status: "not_executed",
-      description: "Verify all form fields have proper validation",
-      steps: [
-        "Navigate to registration page",
-        "Submit form with empty fields",
-        "Verify required field error messages",
-        "Enter mismatched passwords",
-        "Verify password mismatch error"
-      ],
-      expectedResult: "All form validation works correctly",
-      priority: "Low"
-    }
-  ];
+  // Initial data fetch
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadData = async () => {
+      if (isMounted) {
+        await fetchStoryData();
+      }
+    };
+
+    loadData();
+    return () => { isMounted = false; };
+  }, [storyId, id, toast, fetchStoryData]);
+
+  // Refresh data when window gains focus or becomes visible (e.g., when returning from test runner)
+  useEffect(() => {
+    const handleFocus = async () => {
+      console.log('Window focused, refreshing test case data...');
+      await fetchStoryData();
+    };
+
+    const handleVisibilityChange = async () => {
+      if (!document.hidden) {
+        console.log('Page became visible, refreshing test case data...');
+        await fetchStoryData();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [fetchStoryData]);
+
+  // Update test cases state after successful edit
+  const updateTestCaseInState = (updatedTestCase: any) => {
+    setTestCases(prevTestCases => 
+      prevTestCases.map(tc => 
+        tc.id === updatedTestCase.id 
+          ? {
+              ...tc,
+              name: updatedTestCase.name,
+              description: updatedTestCase.description,
+              expectedResult: updatedTestCase.expected_result,
+              priority: updatedTestCase.priority?.charAt(0).toUpperCase() + updatedTestCase.priority?.slice(1) || "Medium",
+              status: updatedTestCase.status,
+              steps: updatedTestCase.steps
+            }
+          : tc
+      )
+    );
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -258,6 +319,9 @@ const StoryDetail = () => {
         return;
       }
 
+      // Update the test case in local state
+      updateTestCaseInState(editingTestCase);
+
       toast({
         title: "Test Case Updated",
         description: "Test case has been updated successfully",
@@ -296,6 +360,90 @@ const StoryDetail = () => {
     }
   };
 
+  // Show loading state while fetching data
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="border-b border-border bg-surface-elevated">
+          <div className="container mx-auto px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => navigate(`/feature/${id}/stories`)}
+                  className="hover:bg-surface-subtle"
+                >
+                  <ArrowLeft className="h-5 w-5 text-muted-foreground" />
+                </Button>
+                <div className="bg-gradient-primary p-2 rounded-lg shadow-elegant">
+                  <BarChart3 className="h-6 w-6 text-white" />
+                </div>
+                <h1 className="text-xl font-bold text-foreground">DOBB.ai</h1>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main className="container mx-auto px-6 py-8">
+          <div className="max-w-4xl mx-auto">
+            <Card className="bg-surface-elevated border border-border">
+              <CardContent className="pt-6">
+                <div className="text-center py-12">
+                  <div className="animate-spin h-16 w-16 text-primary mx-auto mb-6 border-4 border-primary border-t-transparent rounded-full"></div>
+                  <h3 className="text-xl font-semibold text-foreground mb-4">
+                    Loading User Story
+                  </h3>
+                  <p className="text-muted-foreground">
+                    Fetching story details and test cases...
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Show error state if story not found
+  if (!story) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="border-b border-border bg-surface-elevated">
+          <div className="container mx-auto px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => navigate(`/feature/${id}/stories`)}
+                  className="hover:bg-surface-subtle"
+                >
+                  <ArrowLeft className="h-5 w-5 text-muted-foreground" />
+                </Button>
+                <div className="bg-gradient-primary p-2 rounded-lg shadow-elegant">
+                  <BarChart3 className="h-6 w-6 text-white" />
+                </div>
+                <h1 className="text-xl font-bold text-foreground">DOBB.ai</h1>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main className="container mx-auto px-6 py-8">
+          <div className="max-w-4xl mx-auto text-center">
+            <h1 className="text-2xl font-bold text-foreground mb-4">User Story Not Found</h1>
+            <p className="text-muted-foreground mb-6">The requested user story could not be found.</p>
+            <Button onClick={() => navigate(`/feature/${id}/stories`)}>
+              Back to Stories
+            </Button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {/* Top Bar */}
@@ -311,8 +459,8 @@ const StoryDetail = () => {
               >
                 <ArrowLeft className="h-5 w-5 text-muted-foreground" />
               </Button>
-              <div className="bg-gradient-primary p-2 rounded-lg shadow-elegant">
-                <BarChart3 className="h-6 w-6 text-white" />
+              <div className="p-2 rounded-lg shadow-elegant">
+                <img src="/head.png" alt="DOBB.ai" className="size-10" />
               </div>
               <h1 className="text-xl font-bold text-foreground">DOBB.ai</h1>
             </div>
@@ -359,7 +507,7 @@ const StoryDetail = () => {
                     onClick={() => navigate(`/feature/${id}`)}
                     className="cursor-pointer"
                   >
-                    User Authentication System
+                    {featureTitle}
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
@@ -492,6 +640,16 @@ const StoryDetail = () => {
             <div className="flex space-x-3">
               <Button 
                 variant="outline"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="border-border hover:bg-surface-subtle"
+                title="Refresh test case data"
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                {isRefreshing ? 'Refreshing...' : 'Refresh'}
+              </Button>
+              <Button 
+                variant="outline"
                 disabled={selectedTestCases.length === 0}
                 className="border-border hover:bg-surface-subtle"
                 onClick={() => {
@@ -536,7 +694,22 @@ const StoryDetail = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {testCases.map((testCase) => (
+                  {testCases.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-12">
+                        <div className="flex flex-col items-center space-y-4">
+                          <TestTube className="h-12 w-12 text-muted-foreground opacity-50" />
+                          <div className="space-y-2">
+                            <h3 className="text-lg font-medium text-foreground">No Test Cases Found</h3>
+                            <p className="text-sm text-muted-foreground">
+                              No test cases have been generated for this user story yet.
+                            </p>
+                          </div>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    testCases.map((testCase) => (
                     <TableRow key={testCase.id} className="border-border hover:bg-surface-subtle">
                       <TableCell>
                         <Checkbox
@@ -596,7 +769,7 @@ const StoryDetail = () => {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))}
+                  )))}
                 </TableBody>
               </Table>
             </CardContent>

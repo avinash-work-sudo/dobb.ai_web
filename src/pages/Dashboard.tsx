@@ -35,12 +35,11 @@ const Dashboard = () => {
             <CardContent className="pt-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-2xl font-bold text-primary">2</div>
-                  <div className="text-xs text-muted-foreground">Frameworks Available</div>
+                  <div className="text-2xl font-bold text-primary">1</div>
+                  <div className="text-xs text-muted-foreground">Framework Available</div>
                 </div>
                 <div className="flex space-x-1">
                   <Badge variant="outline" className="text-xs">🎭 Playwright</Badge>
-                  <Badge variant="outline" className="text-xs">🐶 Puppeteer</Badge>
                 </div>
               </div>
             </CardContent>
@@ -116,20 +115,6 @@ const Dashboard = () => {
                   </div>
                 </div>
 
-                <div className="border rounded-lg p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium">🐶 Puppeteer</span>
-                    <Badge variant="outline" className="text-xs">Chrome Focus</Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Chrome/Chromium optimized with DevTools access
-                  </p>
-                  <div className="flex flex-wrap gap-1">
-                    <Badge variant="outline" className="text-xs">PDF gen</Badge>
-                    <Badge variant="outline" className="text-xs">Performance</Badge>
-                    <Badge variant="outline" className="text-xs">Lightweight</Badge>
-                  </div>
-                </div>
               </CardContent>
             </Card>
 

@@ -50,7 +50,7 @@ const EXAMPLE_TASKS = [
 
 export function AutomationRunner() {
   const [task, setTask] = useState('');
-  const [framework, setFramework] = useState<'playwright' | 'puppeteer'>('playwright');
+  const framework = 'playwright';
   const [headless, setHeadless] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
   const [result, setResult] = useState<AutomationResult | null>(null);
@@ -111,7 +111,7 @@ export function AutomationRunner() {
     setCurrentStep('Starting automation...');
 
     try {
-      const response = await fetch('http://localhost:3001/api/automation/run', {
+      const response = await fetch(`${import.meta.env.VITE_AUTOMATION_API_URL || 'http://localhost:3001'}/api/automation/run`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -163,7 +163,7 @@ export function AutomationRunner() {
   const pollExecutionStatus = async (executionId: string) => {
     const poll = async () => {
       try {
-        const response = await fetch(`http://localhost:3001/api/automation/status/${executionId}`);
+        const response = await fetch(`${import.meta.env.VITE_AUTOMATION_API_URL || 'http://localhost:3001'}/api/automation/status/${executionId}`);
         const data = await response.json();
         
         if (data.success) {
@@ -191,7 +191,7 @@ export function AutomationRunner() {
 
   const fetchExecutionStatus = async (executionId: string) => {
     try {
-      const response = await fetch(`http://localhost:3001/api/automation/status/${executionId}`);
+      const response = await fetch(`${import.meta.env.VITE_AUTOMATION_API_URL || 'http://localhost:3001'}/api/automation/status/${executionId}`);
       const data = await response.json();
       
       if (data.success) {
@@ -206,7 +206,7 @@ export function AutomationRunner() {
     if (!result?.executionId) return;
 
     try {
-      await fetch(`http://localhost:3001/api/automation/stop/${result.executionId}`, {
+      await fetch(`${import.meta.env.VITE_AUTOMATION_API_URL || 'http://localhost:3001'}/api/automation/stop/${result.executionId}`, {
         method: 'POST'
       });
       
@@ -259,37 +259,16 @@ export function AutomationRunner() {
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Configuration */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">
-                Browser Framework:
-              </label>
-              <Select value={framework} onValueChange={(value) => setFramework(value as 'playwright' | 'puppeteer')} disabled={isRunning}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose framework" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="playwright">
-                    🎭 Playwright (Multi-browser)
-                  </SelectItem>
-                  <SelectItem value="puppeteer">
-                    🐶 Puppeteer (Chrome focus)
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="headless"
-                checked={headless}
-                onCheckedChange={setHeadless}
-                disabled={isRunning}
-              />
-              <label htmlFor="headless" className="text-sm font-medium">
-                Run in headless mode
-              </label>
-            </div>
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="headless"
+              checked={headless}
+              onCheckedChange={setHeadless}
+              disabled={isRunning}
+            />
+            <label htmlFor="headless" className="text-sm font-medium">
+              Run in headless mode
+            </label>
           </div>
 
           {/* Task Input */}
@@ -341,7 +320,7 @@ export function AutomationRunner() {
               ) : (
                 <>
                   <Play className="mr-2 h-4 w-4" />
-                  Run with {framework === 'playwright' ? 'Playwright' : 'Puppeteer'}
+                  Run with Playwright
                 </>
               )}
             </Button>
@@ -381,7 +360,7 @@ export function AutomationRunner() {
               </span>
               <div className="flex items-center space-x-2">
                 <Badge variant="outline" className="text-xs">
-                  {result.framework}
+                  Playwright
                 </Badge>
                 <Badge className={`text-xs border ${getStatusColor(result.status)}`}>
                   {result.status}
